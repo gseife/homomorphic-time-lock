@@ -655,7 +655,7 @@
       <span class="arrow">→</span>
       <div class="flow-step active-step" style="border-color: var(--accent2);">Solve 1 puzzle<br><span class="small">T squarings</span></div>
     </div>
-    <p style="text-align: center; margin-top:10px;">Total work: <span class="highlight2">m × T</span> (m = number of candidates, not voters!)</p>
+    <p style="text-align: center; margin-top:10px;">Complexity: <span class="highlight3">O(n · T)</span> → <span class="highlight2">O(m · T)</span> — for 1M voters (n) and 5 candidates (m), that's <span class="highlight2">5 puzzles</span> instead of <span class="highlight3">1,000,000</span></p>
   </div>
 </div>
 
@@ -665,46 +665,57 @@
 <div class="slide section-title" id="slide-12">
   <p class="subtitle">Core Contribution</p>
   <h2>Homomorphic Time-Lock Puzzles</h2>
-  <p style="color: var(--text-dim); font-size: 1.2rem;">Combining the best of both worlds</p>
+  <p style="color: var(--text-dim); font-size: 1.2rem;">Eliminating the trusted key holder — decryption through time, not authority</p>
 </div>
 
 <!-- ============================================================ -->
 <!-- SLIDE 13: HTLP Definition -->
 <!-- ============================================================ -->
 <div class="slide" id="slide-13">
-  <h2>HTLP: Formal Definition</h2>
-  <p style="margin-bottom: 15px;">Four algorithms define an HTLP scheme:</p>
+  <h2 style="margin-bottom: 12px;">HTLP: Formal Definition</h2>
+  <p style="margin-bottom: 8px; font-size: 1.1rem;">Four algorithms define an HTLP scheme:</p>
 
-  <table>
+  <table style="font-size: 0.95rem; margin: 8px 0;">
     <tbody><tr>
-      <th>Algorithm</th>
-      <th>Description</th>
-      <th>Key Feature</th>
+      <th style="padding: 8px 16px;">Algorithm</th>
+      <th style="padding: 8px 16px;">Description</th>
+      <th style="padding: 8px 16px;">Key Feature</th>
     </tr>
     <tr>
-      <td><span class="highlight">HP.PSetup</span>(1<sup>λ</sup>, T)</td>
-      <td>Generate public parameters pp</td>
-      <td>One-time setup, fixes N, g, h</td>
+      <td style="padding: 8px 16px;"><span class="highlight">HP.PSetup</span>(1<sup>λ</sup>, T)</td>
+      <td style="padding: 8px 16px;">Generate public parameters pp</td>
+      <td style="padding: 8px 16px;">One-time setup, fixes N, g, h</td>
     </tr>
     <tr>
-      <td><span class="highlight">HP.PGen</span>(pp, s)</td>
-      <td>Create puzzle Z for secret s</td>
-      <td>Fast (knows group order)</td>
+      <td style="padding: 8px 16px;"><span class="highlight">HP.PGen</span>(pp, s)</td>
+      <td style="padding: 8px 16px;">Create puzzle Z for secret s</td>
+      <td style="padding: 8px 16px;">Fast (knows group order)</td>
     </tr>
     <tr>
-      <td><span class="highlight">HP.PEval</span>(C, pp, Z<sub>1</sub>..Z<sub>n</sub>)</td>
-      <td>Evaluate function C over puzzles</td>
-      <td>No solving needed!</td>
+      <td style="padding: 8px 16px;"><span class="highlight">HP.PEval</span>(C, pp, Z<sub>1</sub>..Z<sub>n</sub>)</td>
+      <td style="padding: 8px 16px;">Evaluate function C over puzzles</td>
+      <td style="padding: 8px 16px;">No solving needed!</td>
     </tr>
     <tr>
-      <td><span class="highlight">HP.PSolve</span>(pp, Z)</td>
-      <td>Solve a puzzle to recover secret</td>
-      <td>T sequential squarings</td>
+      <td style="padding: 8px 16px;"><span class="highlight">HP.PSolve</span>(pp, Z)</td>
+      <td style="padding: 8px 16px;">Solve a puzzle to recover secret</td>
+      <td style="padding: 8px 16px;">T sequential squarings</td>
     </tr>
   </tbody></table>
 
-  <div class="card" style="margin-top: 20px; border-color: var(--accent2);">
-    <p><span class="highlight2">Compactness:</span> The size of the evaluated puzzle and solving time are <span class="highlight2">independent of the circuit size</span>. This is what makes HTLP useful — otherwise, just solving all puzzles individually would suffice.</p>
+  <div class="card" style="margin-top: 10px; padding: 14px 20px; border-color: var(--accent2);">
+    <p style="font-size: 1.05rem;"><span class="highlight2">Compactness:</span> The evaluated puzzle size and solving time are <span class="highlight2">independent of the circuit size</span>.</p>
+  </div>
+
+  <div class="two-col" style="margin-top: 10px; gap: 25px;">
+    <div class="card card-red" style="padding: 16px 20px;">
+      <h3 style="color: var(--accent3); margin-bottom: 6px; font-size: 1.15rem;">Standard HE: Single Point of Failure</h3>
+      <p style="font-size: 1rem;">Requires a <span class="highlight3">trusted party</span> to hold the decryption key. If compromised, all encrypted data is exposed.</p>
+    </div>
+    <div class="card card-green" style="padding: 16px 20px;">
+      <h3 style="margin-bottom: 6px; font-size: 1.15rem;">HTLP: No Trusted Key Holder</h3>
+      <p style="font-size: 1rem;"><span class="highlight2">Anyone</span> can publicly solve the aggregated result through time. No secret decryption key needed — time itself decrypts.</p>
+    </div>
   </div>
 </div>
 
@@ -760,28 +771,28 @@ s := (v · (w<sup>N</sup>)<sup>-1</sup> mod N² - 1) / N
 <!-- SLIDE 15: Why it works -->
 <!-- ============================================================ -->
 <div class="slide" id="slide-15">
-  <h2>Why Homomorphic Addition Works</h2>
-  <p style="margin-bottom: 15px;">The algebraic structure of <span class="math">Z*<sub>N²</sub></span> enables "addition through multiplication".</p>
+  <h2 style="margin-bottom: 15px;">Why Homomorphic Addition Works</h2>
+  <p style="margin-bottom: 10px; font-size: 1.1rem;">The algebraic structure of <span class="math">Z*<sub>N²</sub></span> enables "addition through multiplication".</p>
 
-  <div class="card" style="margin-bottom: 20px;">
-    <h3>Key Insight: The Paillier Structure</h3>
-    <p>The group <span class="math">Z*<sub>N²</sub></span> decomposes into two independent components:</p>
-    <div class="math-block">
+  <div class="card" style="margin-bottom: 12px; padding: 18px 25px;">
+    <h3 style="margin-bottom: 8px;">Key Insight: The Paillier Structure</h3>
+    <p style="font-size: 1.05rem;">The group <span class="math">Z*<sub>N²</sub></span> decomposes into two independent components:</p>
+    <div class="math-block" style="padding: 10px 20px; margin: 10px 0; font-size: 1rem;">
       Z*<sub>N²</sub> &nbsp;≅&nbsp; ⟨1+N⟩ &nbsp;×&nbsp; {x<sup>N</sup> : x ∈ Z*<sub>N</sub>}
     </div>
     <ul>
-      <li><span class="math">(1+N)<sup>s</sup></span> encodes the secret s — and <span class="highlight">(1+N)<sup>a</sup> · (1+N)<sup>b</sup> = (1+N)<sup>a+b</sup></span></li>
-      <li><span class="math">h<sup>r·N</sup></span> is the "blinding factor" (one-time pad) — it lives in a separate subgroup</li>
+      <li style="padding: 4px 0 4px 30px; font-size: 1.05rem;"><span class="math">(1+N)<sup>s</sup></span> encodes the secret s — and <span class="highlight">(1+N)<sup>a</sup> · (1+N)<sup>b</sup> = (1+N)<sup>a+b</sup></span></li>
+      <li style="padding: 4px 0 4px 30px; font-size: 1.05rem;"><span class="math">h<sup>r·N</sup></span> is the "blinding factor" (one-time pad) — it lives in a separate subgroup</li>
     </ul>
   </div>
 
-  <div class="card card-green">
-    <h3>Multiplying Two Puzzles</h3>
-    <div class="math-block" style="font-size: 0.95rem; text-align: left;">
+  <div class="card card-green" style="padding: 18px 25px;">
+    <h3 style="margin-bottom: 8px;">Multiplying Two Puzzles</h3>
+    <div class="math-block" style="font-size: 0.9rem; text-align: left; padding: 10px 20px; margin: 8px 0; line-height: 1.8;">
       v<sub>1</sub> · v<sub>2</sub> = h<sup>r<sub>1</sub>·N</sup>(1+N)<sup>s<sub>1</sub></sup> · h<sup>r<sub>2</sub>·N</sup>(1+N)<sup>s<sub>2</sub></sup><br>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= h<sup>(r<sub>1</sub>+r<sub>2</sub>)·N</sup> · (1+N)<sup>s<sub>1</sub>+s<sub>2</sub></sup> mod N²
     </div>
-    <p>The blinding factors combine, and the secrets <span class="highlight2">add up</span>. Solving recovers <span class="math">s<sub>1</sub> + s<sub>2</sub></span>.</p>
+    <p style="font-size: 1.05rem;">The blinding factors combine, and the secrets <span class="highlight2">add up</span>. Solving recovers <span class="math">s<sub>1</sub> + s<sub>2</sub></span>.</p>
   </div>
 </div>
 

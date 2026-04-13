@@ -224,6 +224,8 @@
   <h2><span class="section-tag tag-green">Core Contribution</span><br>Homomorphic Time-Lock Puzzles</h2>
   <ul>
     <li>4 algorithms: PSetup, PGen, <span class="highlight2">PEval</span> (new!), PSolve</li>
+    <li><span class="highlight3">Key advantage over standard HE:</span> no trusted key holder (eliminates Single Point of Failure) — anyone can publicly solve the result through time</li>
+    <li>Efficiency: <span class="highlight3">O(n·T)</span> → <span class="highlight2">O(m·T)</span> — scales for millions of voters (n) vs few candidates (m)</li>
     <li>LHTLP construction: Paillier-style encoding in Z*<sub>N&sup2;</sub></li>
     <li>Multiplying puzzles = adding secrets (with visual example)</li>
     <li>Security: Sequential Squaring + DDH + DCR assumptions</li>
