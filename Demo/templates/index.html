@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTLP Live E-Voting</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+        button { font-size: 20px; padding: 15px 30px; margin: 10px; cursor: pointer; }
+        #message { margin-top: 20px; font-weight: bold; color: green; }
+    </style>
+</head>
+<body>
+    <h1>Vote for your Candidate!</h1>
+    <p>Your vote is secured inside a cryptographic time-lock puzzle.</p>
+    
+    <div id="voting-booth">
+        <button onclick="vote('Alice')">Vote Alice</button>
+        <button onclick="vote('Bob')">Vote Bob</button>
+    </div>
+    
+    <div id="message"></div>
+
+    <script>
+        function vote(candidate) {
+            document.getElementById('voting-booth').style.display = 'none';
+            document.getElementById('message').innerText = "Encrypting vote into time-lock puzzle... please wait.";
+            
+            let formData = new URLSearchParams();
+            formData.append('candidate', candidate);
+            
+            fetch('/vote', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    document.getElementById('message').innerText = "Vote successfully locked! Look at the presentation screen.";
+                } else {
+                    document.getElementById('message').innerText = data.message || "Error casting vote.";
+                    document.getElementById('voting-booth').style.display = 'block';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

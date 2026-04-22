@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homomorphic Time-Lock Puzzles and Applications</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg-card: #1a1d2e;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --text: #e8e8f0;
+    --text-dim: #8b8da3;
+    --border: #2a2d42;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .slide {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    padding: 50px 80px;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide.active { display: flex; }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    font-size: 16px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    z-index: 100;
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  .nav-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 30px;
+    font-size: 13px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 100;
+  }
+
+  h1 {
+    font-size: 3.4rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    line-height: 1.15;
+  }
+
+  h2 {
+    font-size: 2.8rem;
+    font-weight: 600;
+    margin-bottom: 35px;
+    color: var(--accent);
+  }
+
+  h3 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: var(--accent2);
+  }
+
+  p, li {
+    font-size: 1.5rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  ul { list-style: none; padding-left: 0; }
+
+  ul li {
+    padding: 10px 0 10px 35px;
+    position: relative;
+  }
+
+  ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22px;
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    background: var(--accent);
+    opacity: 0.8;
+  }
+
+  .highlight { color: var(--accent); font-weight: 600; }
+  .highlight2 { color: var(--accent2); font-weight: 600; }
+  .highlight3 { color: var(--accent3); font-weight: 600; }
+
+  .subtitle {
+    font-size: 1.6rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 300;
+  }
+
+  .code-block {
+    background: #0d0f18;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 25px 30px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin: 20px 0;
+    overflow-x: auto;
+    color: #c8c8d8;
+  }
+
+  .math {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(108, 99, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 1.2rem;
+    color: var(--accent);
+    display: inline-block;
+    border: 1px solid rgba(108, 99, 255, 0.2);
+  }
+
+  .math-block {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(108, 99, 255, 0.08);
+    padding: 25px 35px;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    color: var(--accent);
+    margin: 25px 0;
+    text-align: center;
+    border: 1px solid rgba(108, 99, 255, 0.15);
+    line-height: 2;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: start;
+    margin-top: 10px;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 35px;
+    align-items: start;
+    margin-top: 10px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px;
+  }
+
+  .card-accent { border-left: 4px solid var(--accent); }
+  .card-green { border-left: 4px solid var(--accent2); }
+  .card-red { border-left: 4px solid var(--accent3); }
+
+  .tag {
+    display: inline-block;
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .tag-purple { background: rgba(108, 99, 255, 0.2); color: var(--accent); }
+  .tag-green { background: rgba(0, 212, 170, 0.2); color: var(--accent2); }
+  .tag-red { background: rgba(255, 107, 107, 0.2); color: var(--accent3); }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+  }
+
+  .flow-step {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 16px 28px;
+    border-radius: 12px;
+    font-size: 1.15rem;
+    text-align: center;
+    min-width: 150px;
+  }
+
+  .flow-step.active-step {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(108, 99, 255, 0.2);
+  }
+
+  .arrow { font-size: 1.8rem; color: var(--accent); }
+
+  .title-slide {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .title-slide h1 {
+    font-size: 3.8rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .title-slide .subtitle { font-size: 1.8rem; margin-top: 10px; }
+
+  .authors {
+    margin-top: 30px;
+    font-size: 1.3rem;
+    color: var(--text-dim);
+  }
+
+  .section-title {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .section-title h2 {
+    font-size: 3.2rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-title .subtitle { font-size: 1.5rem; }
+
+  .demo-banner {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .demo-banner h1 {
+    font-size: 3.5rem;
+    color: var(--accent2);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .demo-banner .subtitle { font-size: 1.6rem; margin-top: 15px; }
+
+  .emoji { font-size: 3.5rem; margin-bottom: 15px; display: block; }
+  .big-emoji { font-size: 5.5rem; margin-bottom: 20px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 1.2rem;
+  }
+
+  th {
+    background: rgba(108, 99, 255, 0.15);
+    padding: 14px 22px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--accent);
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  tr:hover td { background: rgba(108, 99, 255, 0.05); }
+
+  .small { font-size: 1.05rem; color: var(--text-dim); }
+  .footnote {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    margin-top: 20px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+<div class="slide-counter" id="counter"></div>
+<div class="nav-hint">Arrow keys / Click to navigate</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================================ -->
+<div class="slide title-slide active" id="slide-1">
+  <h1>Homomorphic Time-Lock Puzzles<br>and Applications</h1>
+  <p class="subtitle">Malavolta &amp; Thyagarajan (2019) &mdash; Paper Presentation</p>
+  <p class="authors">Smart Contracts Seminar &mdash; University of St. Gallen</p>
+  <p class="authors" style="margin-top: 20px; color: var(--accent);">Spring 2026</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: Agenda -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-2">
+  <h2>Agenda</h2>
+  <div class="two-col">
+    <div>
+      <ul>
+        <li style="font-size:1.5rem;">Demo Initiation &mdash; Cast your votes!</li>
+        <li style="font-size:1.5rem;">Homomorphic Encryption</li>
+        <li style="font-size:1.5rem;">Time-Lock Puzzles</li>
+        <li style="font-size:1.5rem;">Homomorphic Time-Lock Puzzles</li>
+      </ul>
+    </div>
+    <div>
+      <ul>
+        <li style="font-size:1.5rem;">Application: Coin Flipping</li>
+        <li style="font-size:1.5rem;">Application: E-Voting</li>
+        <li style="font-size:1.5rem;">Voting Application Structure</li>
+        <li style="font-size:1.5rem;">Live Demonstration &mdash; Results!</li>
+        <li style="font-size:1.5rem;">Summary &amp; Key Takeaways</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: Demo Initiation -->
+<!-- ============================================================ -->
+<div class="slide demo-banner" id="slide-3">
+  <p class="big-emoji">&#x1F5F3;</p>
+  <h1>Time to Vote!</h1>
+  <p class="subtitle" style="color: var(--text); font-size: 1.8rem;">Open the voting link on your phone and vote for <span class="highlight3">Alice</span> or <span class="highlight">Bob</span>.</p>
+  <p class="subtitle" style="margin-top: 30px; color: var(--text-dim); font-size: 1.5rem;">Your vote is immediately encrypted into a time-lock puzzle.<br>Nobody can see individual votes &mdash; not even the server.</p>
+  <p style="margin-top: 40px; font-size: 1.5rem; color: var(--accent2);">While you vote, let's learn how this works...</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: Motivation -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-4">
+  <h2>The Problem: Voting Without Trust</h2>
+  <p style="margin-bottom: 25px; font-size: 1.5rem;">Imagine an election on a blockchain &mdash; <span class="highlight">no trusted authority</span> to count votes.</p>
+  <div class="two-col">
+    <div class="card card-red">
+      <span class="tag tag-red">Approach 1: Commit &amp; Reveal</span>
+      <ul>
+        <li>Voters commit to their vote, then reveal later</li>
+        <li style="color: var(--accent3);">Problem: voters can go offline and never reveal</li>
+        <li style="color: var(--accent3);">An attacker can block reveals to manipulate the outcome</li>
+      </ul>
+    </div>
+    <div class="card card-green">
+      <span class="tag tag-green">Approach 2: Time-Lock Puzzles</span>
+      <ul>
+        <li>Lock each vote in a puzzle that can be "brute-forced" after time T</li>
+        <li>Offline voters? Just solve their puzzle</li>
+        <li style="color: var(--accent3);">But: 100k missing votes = 100k puzzles to solve!</li>
+      </ul>
+    </div>
+  </div>
+  <p class="footnote">Malavolta &amp; Thyagarajan, Section 1.1</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: Section - Homomorphic -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-5">
+  <p class="subtitle">Concept 1</p>
+  <h2>Homomorphic Encryption</h2>
+  <p style="color: var(--text-dim); font-size: 1.4rem;">Computing on encrypted data &mdash; without ever decrypting</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: Homomorphic Encryption Explained Simply -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-6">
+  <h2>Homomorphic Encryption in a Nutshell</h2>
+  <p style="margin-bottom: 15px; font-size: 1.5rem;">You can <span class="highlight">do math on locked boxes</span> without opening them.</p>
+
+  <div class="math-block" style="font-size: 1.7rem;">
+    Encrypt(3) + Encrypt(5) &nbsp;=&nbsp; Encrypt(8)
+  </div>
+
+  <div class="two-col" style="margin-top: 30px;">
+    <div class="card card-red">
+      <h3 style="color: var(--accent3);">Normal Encryption</h3>
+      <p style="font-size: 1.35rem;">To add two secrets, you must <span class="highlight3">decrypt first</span>, compute, then re-encrypt.</p>
+      <p style="font-size: 1.35rem; margin-top:10px;">Whoever computes sees the data!</p>
+    </div>
+    <div class="card card-green">
+      <h3>Homomorphic Encryption</h3>
+      <p style="font-size: 1.35rem;">Combine the encrypted values <span class="highlight2">directly</span>. Decrypt only the final result.</p>
+      <p style="font-size: 1.35rem; margin-top:10px;">Nobody sees individual values!</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 25px; background: rgba(108, 99, 255, 0.05); border-color: var(--accent);">
+    <p style="font-size: 1.35rem;"><span class="highlight">Analogy:</span> Think of a ballot box. You drop sealed envelopes in. A magic box shakes them and outputs the total &mdash; without ever opening any envelope.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: Flavors -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-7">
+  <h2>Types of Homomorphism</h2>
+  <div class="three-col" style="margin-top: 10px;">
+    <div class="card card-accent">
+      <span class="tag tag-purple">Additive (Linear)</span>
+      <p style="font-size: 1.3rem; margin-top: 10px;">Can <span class="highlight">add</span> encrypted values.</p>
+      <div class="math-block" style="font-size: 1.15rem;">
+        Enc(a) &middot; Enc(b)<br>= Enc(a + b)
+      </div>
+      <p style="font-size: 1.15rem; margin-top: 10px; color: var(--accent2);">Used for voting &amp; coin flipping</p>
+    </div>
+    <div class="card card-green">
+      <span class="tag tag-green">Multiplicative</span>
+      <p style="font-size: 1.3rem; margin-top: 10px;">Can <span class="highlight2">multiply</span> encrypted values.</p>
+      <div class="math-block" style="font-size: 1.15rem;">
+        Enc(a) &middot; Enc(b)<br>= Enc(a &middot; b)
+      </div>
+      <p style="font-size: 1.15rem; margin-top: 10px; color: var(--accent2);">Used for contract signing</p>
+    </div>
+    <div class="card card-red">
+      <span class="tag tag-red">Fully Homomorphic</span>
+      <p style="font-size: 1.3rem; margin-top: 10px;">Can compute <span class="highlight3">any function</span>.</p>
+      <div class="math-block" style="font-size: 1.15rem;">
+        Eval(f, Enc(a), Enc(b))<br>= Enc(f(a,b))
+      </div>
+      <p style="font-size: 1.15rem; margin-top: 10px; color: var(--accent3);">Theoretical / not yet practical</p>
+    </div>
+  </div>
+  <p class="footnote">This paper provides practical RSA-based constructions for additive &amp; multiplicative (Sections 4.1, 4.2)</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: Section - TLP -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-8">
+  <p class="subtitle">Concept 2</p>
+  <h2>Time-Lock Puzzles</h2>
+  <p style="color: var(--text-dim); font-size: 1.4rem;">Encrypting a message for the future</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: TLP Concept -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-9">
+  <h2>Time-Lock Puzzles: The Idea</h2>
+  <p style="margin-bottom: 15px; font-size: 1.5rem;">Lock a secret so that it <span class="highlight">cannot be opened</span> until a certain amount of <span class="highlight">computation time</span> has passed.</p>
+
+  <div class="card" style="margin-bottom: 25px;">
+    <h3>Two Key Properties</h3>
+    <ul>
+      <li><span class="highlight">Fast to create:</span> The person locking the puzzle does it in milliseconds (they know a shortcut)</li>
+      <li><span class="highlight">Slow to open:</span> Anyone else must do T sequential steps &mdash; one after the other, no shortcuts</li>
+    </ul>
+  </div>
+
+  <div class="card card-accent">
+    <h3 style="color: var(--accent);">How? Repeated Squaring (Rivest, Shamir, Wagner 1996)</h3>
+    <p style="font-size: 1.4rem;">Pick a number x, then square it T times modulo N (an RSA number):</p>
+    <div class="flow-arrow" style="margin-top: 15px;">
+      <div class="flow-step">x</div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step">x&sup2;</div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step">x<sup>4</sup></div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step">x<sup>8</sup></div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step">...</div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step active-step">x<sup>2<sup>T</sup></sup></div>
+    </div>
+    <p style="font-size: 1.25rem; margin-top: 12px; color: var(--text-dim);">Each step depends on the previous one &rarr; <span class="highlight">cannot be parallelized</span> (even with 1000 CPUs).</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: TLP - Creator vs Solver -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-10">
+  <h2>Creator vs. Solver</h2>
+  <p style="margin-bottom: 20px; font-size: 1.5rem;">Why can the <span class="highlight2">creator</span> be fast but the <span class="highlight3">solver</span> is slow?</p>
+
+  <div class="two-col">
+    <div class="card card-green" style="text-align:center;">
+      <span class="emoji">&#x1F513;</span>
+      <h3>Puzzle Creator (knows p, q)</h3>
+      <p style="font-size: 1.35rem;">Knows the factorization of N = p &middot; q</p>
+      <p style="font-size: 1.35rem; margin-top: 15px;">Can compute a shortcut:</p>
+      <div class="math-block" style="font-size: 1.2rem;">
+        e = 2<sup>T</sup> mod &phi;(N)<br>
+        then: x<sup>e</sup> mod N
+      </div>
+      <p style="font-size: 1.35rem; color: var(--accent2);">Done in milliseconds!</p>
+    </div>
+    <div class="card card-red" style="text-align:center;">
+      <span class="emoji">&#x1F512;</span>
+      <h3 style="color: var(--accent3);">Puzzle Solver (doesn't know p, q)</h3>
+      <p style="font-size: 1.35rem;">Doesn't know the factorization</p>
+      <p style="font-size: 1.35rem; margin-top: 15px;">Must square step by step:</p>
+      <div class="math-block" style="font-size: 1.2rem;">
+        w<sub>0</sub> = x<br>
+        w<sub>i+1</sub> = w<sub>i</sub>&sup2; mod N<br>
+        ... repeat T times
+      </div>
+      <p style="font-size: 1.35rem; color: var(--accent3);">Takes ~T seconds!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Scalability Problem -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-11">
+  <h2>The Scalability Problem</h2>
+  <p style="margin-bottom: 20px; font-size: 1.5rem;">With standard TLPs, you must solve <span class="highlight3">each puzzle separately</span>.</p>
+
+  <div class="card card-red" style="margin-bottom: 25px;">
+    <h3 style="color: var(--accent3);">Standard Approach: Solve every missing vote</h3>
+    <div class="flow-arrow">
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle 1<br><span class="small">~2.5 min</span></div>
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle 2<br><span class="small">~2.5 min</span></div>
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle 3<br><span class="small">~2.5 min</span></div>
+      <div class="flow-step" style="border-color: var(--accent3);">...</div>
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle n<br><span class="small">~2.5 min</span></div>
+    </div>
+    <p style="text-align: center; font-size: 1.4rem; margin-top:12px;">100,000 voters offline = <span class="highlight3">100,000 &times; 2.5 min &asymp; 173 days</span></p>
+  </div>
+
+  <div class="card card-green">
+    <h3>The Key Idea: Combine first, solve once</h3>
+    <div class="flow-arrow">
+      <div class="flow-step active-step" style="min-width: 250px;">Combine all puzzles<br><span class="small" style="color: var(--accent2);">instant (just multiplication)</span></div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step active-step" style="border-color: var(--accent2); min-width: 250px;">Solve 1 result puzzle<br><span class="small" style="color: var(--accent2);">~2.5 min per candidate</span></div>
+    </div>
+    <p style="text-align: center; font-size: 1.4rem; margin-top:12px;">Any number of voters &rarr; <span class="highlight2">only solve m puzzles</span> (m = number of candidates)</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: Section - HTLP -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-12">
+  <p class="subtitle">Core Contribution</p>
+  <h2>Homomorphic Time-Lock Puzzles</h2>
+  <p style="color: var(--text-dim); font-size: 1.4rem;">Time-Lock + Homomorphism = scalable crypto protocols</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: HTLP - The 4 Algorithms -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-13">
+  <h2>HTLP: Four Building Blocks</h2>
+  <p style="margin-bottom: 20px; font-size: 1.5rem;">An HTLP extends time-lock puzzles with a <span class="highlight">homomorphic evaluation</span> step.</p>
+
+  <table>
+    <tr>
+      <th style="font-size: 1.25rem;">Step</th>
+      <th style="font-size: 1.25rem;">What it does</th>
+      <th style="font-size: 1.25rem;">Speed</th>
+    </tr>
+    <tr>
+      <td><span class="highlight">PSetup</span></td>
+      <td>One-time setup: generate keys N, g, h</td>
+      <td>Once (fast, knows factorization)</td>
+    </tr>
+    <tr>
+      <td><span class="highlight">PGen</span></td>
+      <td>Create a puzzle that locks a secret value</td>
+      <td>Fast (milliseconds)</td>
+    </tr>
+    <tr>
+      <td><span class="highlight2">PEval</span></td>
+      <td>Combine puzzles &rarr; result puzzle (no solving!)</td>
+      <td>Instant (just multiplication)</td>
+    </tr>
+    <tr>
+      <td><span class="highlight3">PSolve</span></td>
+      <td>Open a puzzle by doing T squarings</td>
+      <td>Slow (T seconds, sequential)</td>
+    </tr>
+  </table>
+
+  <div class="card card-green" style="margin-top: 25px;">
+    <p style="font-size: 1.4rem;"><span class="highlight2">The magic:</span> PEval lets you combine n puzzles into 1 &mdash; and PSolve only needs to run <span class="highlight2">once</span> on the combined result. The solving time is the same whether you had 10 or 10 million input puzzles.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: LHTLP Construction (simplified) -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-14">
+  <h2>How LHTLP Works (Linear / Additive)</h2>
+  <p style="margin-bottom: 10px; font-size: 1.4rem;">Uses the <span class="highlight">Paillier trick</span>: in the group Z*<sub>N&sup2;</sub>, multiplication of ciphertexts = addition of secrets.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Creating a Puzzle for secret s</h3>
+      <div class="code-block" style="font-size: 1.05rem;">
+Pick random r
+<span style="color: var(--accent);">u</span> = g<sup>r</sup> mod N
+<span style="color: var(--accent2);">v</span> = h<sup>r&middot;N</sup> &middot; (1+N)<sup>s</sup> mod N&sup2;
+
+Puzzle = (u, v)
+      </div>
+      <p style="font-size: 1.2rem; margin-top: 10px;">The secret s is hidden inside v, masked by the blinding factor h<sup>r&middot;N</sup>.</p>
+    </div>
+    <div>
+      <h3>Combining (PEval) &mdash; just multiply!</h3>
+      <div class="code-block" style="font-size: 1.05rem;">
+u&#771; = u<sub>1</sub> &middot; u<sub>2</sub> &middot; ... &middot; u<sub>n</sub> mod N
+v&#771; = v<sub>1</sub> &middot; v<sub>2</sub> &middot; ... &middot; v<sub>n</sub> mod N&sup2;
+      </div>
+      <p style="font-size: 1.2rem; margin-top: 10px;">Result puzzle encodes <span class="highlight2">s<sub>1</sub> + s<sub>2</sub> + ... + s<sub>n</sub></span></p>
+
+      <h3 style="margin-top: 20px;">Solving (PSolve)</h3>
+      <div class="code-block" style="font-size: 1.05rem;">
+w = u<sup>2<sup>T</sup></sup> mod N <span style="color: var(--text-dim);">(T squarings)</span>
+sum = decode(v, w)
+      </div>
+    </div>
+  </div>
+  <p class="footnote">Paper Section 4.1 &mdash; Security: Sequential Squaring + DDH + DCR assumptions</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: Intuition - Why addition works -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-15">
+  <h2>Why Multiplying Puzzles = Adding Secrets</h2>
+  <p style="margin-bottom: 20px; font-size: 1.4rem;">The encoding <span class="math">(1+N)<sup>s</sup></span> has a special property:</p>
+
+  <div class="math-block" style="font-size: 1.6rem;">
+    (1+N)<sup>a</sup> &middot; (1+N)<sup>b</sup> &nbsp;=&nbsp; (1+N)<sup>a+b</sup> &nbsp;&nbsp;mod N&sup2;
+  </div>
+
+  <div class="card" style="margin: 30px 0;">
+    <h3>Concrete Example with 3 Votes</h3>
+    <p style="font-size: 1.35rem;">Alice gets votes with s=1, Bob's position gets s=0:</p>
+    <div class="flow-arrow" style="margin: 15px 0;">
+      <div class="flow-step" style="min-width: 180px;">Vote 1: Alice<br><span class="small">s=1 &rarr; (1+N)<sup>1</sup></span></div>
+      <span class="arrow">&times;</span>
+      <div class="flow-step" style="min-width: 180px;">Vote 2: Bob<br><span class="small">s=0 &rarr; (1+N)<sup>0</sup></span></div>
+      <span class="arrow">&times;</span>
+      <div class="flow-step" style="min-width: 180px;">Vote 3: Alice<br><span class="small">s=1 &rarr; (1+N)<sup>1</sup></span></div>
+      <span class="arrow">=</span>
+      <div class="flow-step active-step" style="min-width: 180px; border-color: var(--accent2);">Combined<br><span class="small" style="color: var(--accent2);">(1+N)<sup>2</sup> &rarr; Alice: 2</span></div>
+    </div>
+    <p style="font-size: 1.3rem; color: var(--text-dim);">The blinding factors (h<sup>r&middot;N</sup>) also multiply &mdash; but they cancel out during PSolve!</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: Section - Coin Flip -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-16">
+  <p class="subtitle">Application 1</p>
+  <h2>Multi-Party Coin Flipping</h2>
+  <p style="color: var(--text-dim); font-size: 1.4rem;">Fair randomness among n parties &mdash; no one can cheat</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: Coin Flipping Protocol -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-17">
+  <h2>Coin Flipping with HTLP</h2>
+  <p style="margin-bottom: 10px; font-size: 1.4rem;"><span class="highlight">Goal:</span> n parties agree on a random bit. Even n&minus;1 cheaters can't bias it.</p>
+
+  <div class="card" style="margin-bottom: 25px;">
+    <div class="flow-arrow">
+      <div class="flow-step active-step" style="min-width: 200px;">
+        <span class="tag tag-purple">Step 1</span><br>
+        Each party picks a<br>random bit b<sub>i</sub>
+      </div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step active-step" style="min-width: 200px;">
+        <span class="tag tag-purple">Step 2</span><br>
+        Lock it: Z<sub>i</sub> = PGen(b<sub>i</sub>)<br>
+        Broadcast Z<sub>i</sub>
+      </div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step active-step" style="min-width: 200px;">
+        <span class="tag tag-green">Step 3</span><br>
+        Combine all:<br>
+        Z = PEval(Z<sub>1</sub>,...,Z<sub>n</sub>)
+      </div>
+      <span class="arrow">&rarr;</span>
+      <div class="flow-step active-step" style="min-width: 200px; border-color: var(--accent2);">
+        <span class="tag tag-green">Step 4</span><br>
+        Solve Z, take<br>
+        last bit = coin
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card card-accent">
+      <h3 style="color: var(--accent);">Why it's fair</h3>
+      <p style="font-size: 1.3rem;">Each bit is time-locked. Even if n&minus;1 parties collude, they can't see the last party's bit before committing their own.</p>
+    </div>
+    <div class="card card-green">
+      <h3>Why it scales</h3>
+      <table style="font-size: 1.15rem;">
+        <tr><td>Without HTLP:</td><td><span class="highlight3">n &times; T</span> squarings</td></tr>
+        <tr><td>With HTLP:</td><td><span class="highlight2">1 &times; T</span> squarings</td></tr>
+      </table>
+      <p style="font-size: 1.15rem; margin-top: 10px;">1000 parties? Still just 1 puzzle to solve.</p>
+    </div>
+  </div>
+  <p class="footnote">Paper Section 6.2 &mdash; Relevant for blockchain randomness (e.g., Ethereum)</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: Section - Voting -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-18">
+  <p class="subtitle">Application 2</p>
+  <h2>E-Voting</h2>
+  <p style="color: var(--text-dim); font-size: 1.4rem;">Scalable elections without a trusted authority</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19: E-Voting Protocol -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-19">
+  <h2>E-Voting with HTLP</h2>
+  <p style="margin-bottom: 15px; font-size: 1.4rem;"><span class="highlight">n</span> voters, <span class="highlight">m</span> candidates. Each vote = a vector of m puzzles.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>How a Voter Encodes Their Choice</h3>
+      <p style="font-size: 1.3rem; margin-bottom: 10px;">Voting for candidate j? Create m puzzles:</p>
+      <div class="code-block" style="font-size: 1.1rem;">
+Puzzle 1: PGen(0)  <span style="color: var(--text-dim);">&larr; not my pick</span>
+Puzzle 2: PGen(<span style="color: var(--accent2);">1</span>)  <span style="color: var(--text-dim);">&larr; my candidate!</span>
+Puzzle 3: PGen(0)  <span style="color: var(--text-dim);">&larr; not my pick</span>
+...
+      </div>
+      <p style="font-size: 1.2rem; margin-top: 10px;">In our demo (2 candidates):</p>
+      <table style="font-size: 1.15rem;">
+        <tr><td>Vote Alice:</td><td><span class="math" style="font-size:1.05rem;">(PGen(1), PGen(0))</span></td></tr>
+        <tr><td>Vote Bob:</td><td><span class="math" style="font-size:1.05rem;">(PGen(0), PGen(1))</span></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Counting Phase</h3>
+      <p style="font-size: 1.3rem; margin-bottom: 10px;">For each candidate j:</p>
+      <div class="flow-arrow" style="flex-direction: column; align-items: center; gap: 10px;">
+        <div class="flow-step active-step" style="width: 340px;">
+          <span class="highlight">1. Combine</span> all j-th puzzles<br>
+          <span class="small" style="color: var(--accent2);">PEval &mdash; instant, just multiply</span>
+        </div>
+        <span class="arrow">&darr;</span>
+        <div class="flow-step active-step" style="width: 340px; border-color: var(--accent2);">
+          <span class="highlight2">2. Solve</span> the combined puzzle<br>
+          <span class="small" style="color: var(--accent2);">PSolve &mdash; T squarings</span>
+        </div>
+        <span class="arrow">&darr;</span>
+        <div class="flow-step" style="width: 340px; border-color: var(--accent2);">
+          <span class="highlight2">Result:</span> total votes for candidate j
+        </div>
+      </div>
+      <p style="font-size: 1.25rem; margin-top: 15px; text-align: center; color: var(--accent2);">Only <span class="highlight2">m puzzles</span> to solve &mdash; not n!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20: Voting Security -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-20">
+  <h2>Why This Voting Scheme is Secure</h2>
+  <div class="three-col">
+    <div class="card card-accent" style="text-align: center;">
+      <span class="emoji">&#x1F512;</span>
+      <h3 style="color: var(--accent);">Ballot Secrecy</h3>
+      <p style="font-size: 1.25rem;">Individual votes are locked in time-lock puzzles. No one can decrypt them before time T.</p>
+    </div>
+    <div class="card card-green" style="text-align: center;">
+      <span class="emoji">&#x2696;</span>
+      <h3>No Bias</h3>
+      <p style="font-size: 1.25rem;">All votes are committed before anyone can see partial results. The time-lock prevents peeking.</p>
+    </div>
+    <div class="card card-red" style="text-align: center;">
+      <span class="emoji">&#x1F6E1;</span>
+      <h3 style="color: var(--accent3);">Offline-Resilient</h3>
+      <p style="font-size: 1.25rem;">Voters going offline is fine &mdash; their puzzles are already combined. No cooperation needed to count.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 30px;">
+    <p style="font-size: 1.4rem;"><span class="highlight">No trusted authority:</span> The counting is a public operation. Anyone can combine puzzles and solve them. Perfect for <span class="highlight2">blockchain deployment</span> with a public append-only bulletin board.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 21: Section - Demo App -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-21">
+  <p class="subtitle">Our Implementation</p>
+  <h2>Voting Application Structure</h2>
+  <p style="color: var(--text-dim); font-size: 1.4rem;">A live LHTLP e-voting demo</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 22: Architecture -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-22">
+  <h2>Application Architecture</h2>
+  <div class="two-col">
+    <div>
+      <h3>Project Structure</h3>
+      <div class="code-block" style="font-size: 1.1rem;">
+Demo/
+&boxvr;&HorizontalLine;&HorizontalLine; app.py          <span style="color: var(--accent);"># Server + LHTLP</span>
+&boxvr;&HorizontalLine;&HorizontalLine; templates/
+&boxv;   &boxvr;&HorizontalLine;&HorizontalLine; index.html  <span style="color: var(--accent2);"># Voter page</span>
+&boxv;   &boxur;&HorizontalLine;&HorizontalLine; admin.html  <span style="color: var(--accent3);"># Dashboard</span>
+&boxur;&HorizontalLine;&HorizontalLine; ngrok.exe       <span style="color: var(--text-dim);"># Public URL</span>
+      </div>
+
+      <h3 style="margin-top: 20px;">Parameters</h3>
+      <table style="font-size: 1.15rem;">
+        <tr><td>Primes</td><td>128-bit safe primes</td></tr>
+        <tr><td>Solving time</td><td>~150 sec per puzzle</td></tr>
+        <tr><td>Total time</td><td>~5 min (2 candidates)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>How It Flows</h3>
+      <div class="flow-arrow" style="flex-direction: column; align-items: center; gap: 12px;">
+        <div class="flow-step active-step" style="width: 320px;">
+          <span class="highlight">Voters (phones)</span><br>
+          Pick Alice or Bob via web UI
+        </div>
+        <span class="arrow">&darr;</span>
+        <div class="flow-step" style="width: 320px;">
+          <span class="highlight">Server encrypts</span><br>
+          PGen(1) for chosen, PGen(0) for other
+        </div>
+        <span class="arrow">&darr;</span>
+        <div class="flow-step" style="width: 320px;">
+          <span class="highlight2">Admin closes voting</span><br>
+          PEval: combines all puzzles (instant)
+        </div>
+        <span class="arrow">&darr;</span>
+        <div class="flow-step active-step" style="width: 320px; border-color: var(--accent2);">
+          <span class="highlight2">PSolve runs (~5 min)</span><br>
+          Progress bar shows live status
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 23: Code Walkthrough -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-23">
+  <h2>Key Code Snippets</h2>
+  <div class="two-col">
+    <div>
+      <h3>Puzzle Generation (PGen)</h3>
+      <div class="code-block" style="font-size: 1rem;">
+<span style="color: #ff79c6;">def</span> <span style="color: #50fa7b;">PGen</span>(self, s):
+    r = random.randrange(1, self.N2)
+    u = pow(self.g, r, self.N)
+    v = (pow(self.h, r*self.N, self.N2)
+       * pow(1+self.N, s, self.N2)) % self.N2
+    <span style="color: #ff79c6;">return</span> (u, v)
+      </div>
+
+      <h3>Homomorphic Combine (PEval)</h3>
+      <div class="code-block" style="font-size: 1rem;">
+<span style="color: #ff79c6;">def</span> <span style="color: #50fa7b;">PEval</span>(self, puzzles):
+    u_tilde, v_tilde = 1, 1
+    <span style="color: #ff79c6;">for</span> u, v <span style="color: #ff79c6;">in</span> puzzles:
+        u_tilde = (u_tilde * u) % self.N
+        v_tilde = (v_tilde * v) % self.N2
+    <span style="color: #ff79c6;">return</span> (u_tilde, v_tilde)
+      </div>
+    </div>
+    <div>
+      <h3>Puzzle Solving (PSolve)</h3>
+      <div class="code-block" style="font-size: 1rem;">
+<span style="color: #ff79c6;">def</span> <span style="color: #50fa7b;">PSolve</span>(self, puzzle):
+    u, v = puzzle
+    w = u
+    <span style="color: var(--text-dim);"># T sequential squarings (~2.5 min)</span>
+    <span style="color: #ff79c6;">for</span> i <span style="color: #ff79c6;">in</span> range(self.T):
+        w = pow(w, 2, self.N)
+    <span style="color: var(--text-dim);"># Decode the sum</span>
+    w_N_inv = mod_inverse(
+        pow(w, self.N, self.N2), self.N2)
+    <span style="color: #ff79c6;">return</span> (((v*w_N_inv) % self.N2) - 1) // self.N
+      </div>
+
+      <h3>Casting a Vote</h3>
+      <div class="code-block" style="font-size: 1rem;">
+<span style="color: #ff79c6;">if</span> candidate == <span style="color: #f1fa8c;">'Alice'</span>:
+    vote = (PGen(<span style="color: var(--accent2);">1</span>), PGen(0))
+<span style="color: #ff79c6;">elif</span> candidate == <span style="color: #f1fa8c;">'Bob'</span>:
+    vote = (PGen(0), PGen(<span style="color: var(--accent2);">1</span>))
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 24: Demo Results -->
+<!-- ============================================================ -->
+<div class="slide demo-banner" id="slide-24">
+  <p class="big-emoji">&#x1F389;</p>
+  <h1 style="color: var(--accent2);">Live Demonstration</h1>
+  <p class="subtitle" style="color: var(--text); font-size: 1.7rem;">Let's switch to the admin dashboard and see the results!</p>
+  <p style="margin-top: 30px; font-size: 1.4rem; color: var(--text-dim);">
+    The server has been combining all your encrypted votes<br>
+    and solving the time-lock puzzles in the background.
+  </p>
+  <p style="margin-top: 30px; color: var(--accent); font-size: 1.3rem;">
+    No individual vote was ever decrypted &mdash;<br>
+    only the aggregate total was recovered.
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 25: Summary -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-25">
+  <h2>Summary</h2>
+  <div class="two-col">
+    <div>
+      <h3>What We Learned</h3>
+      <ul>
+        <li><span class="highlight">Time-Lock Puzzles</span> encrypt messages for the future via sequential squaring</li>
+        <li><span class="highlight">Homomorphic Encryption</span> allows computing on ciphertexts without decrypting</li>
+        <li><span class="highlight2">HTLP</span> combines both: evaluate a function over puzzles, then solve <span class="highlight2">just one</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Paper Contributions</h3>
+      <table style="font-size: 1.15rem;">
+        <tr>
+          <th>Scheme</th>
+          <th>Operation</th>
+          <th>Use Case</th>
+        </tr>
+        <tr>
+          <td>LHTLP</td>
+          <td>Addition</td>
+          <td>Voting, Coin Flip</td>
+        </tr>
+        <tr>
+          <td>MHTLP</td>
+          <td>Multiplication</td>
+          <td>Contract Signing</td>
+        </tr>
+      </table>
+      <p style="font-size: 1.2rem; margin-top: 20px; color: var(--text-dim);">Extensions: reusable setup, combining different hardness parameters, semi-compact branching programs</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 26: Key Takeaways -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-26">
+  <h2>Key Takeaways</h2>
+  <div style="max-width: 1000px; margin: 0 auto;">
+    <div class="card card-accent" style="margin-bottom: 25px;">
+      <span class="emoji">&#x1F4A1;</span>
+      <p style="font-size: 1.5rem;"><span class="highlight">Evaluate first, solve once.</span> HTLPs reduce computation from <span class="highlight3">O(n &middot; T)</span> to <span class="highlight2">O(m &middot; T)</span> &mdash; independent of the number of participants.</p>
+    </div>
+    <div class="card card-green" style="margin-bottom: 25px;">
+      <span class="emoji">&#x26D3;</span>
+      <p style="font-size: 1.5rem;"><span class="highlight2">No trusted authority needed.</span> Puzzle solving is public. Anyone can combine and verify. Ideal for <span class="highlight2">blockchain-based</span> protocols.</p>
+    </div>
+    <div class="card card-red">
+      <span class="emoji">&#x1F52C;</span>
+      <p style="font-size: 1.5rem;"><span class="highlight3">Open challenges:</span> Efficient public-coin setup, practical fully-homomorphic TLP without obfuscation, and tighter security proofs.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 27: Thank You -->
+<!-- ============================================================ -->
+<div class="slide title-slide" id="slide-27">
+  <h1>Thank You!</h1>
+  <p class="subtitle" style="margin-top: 10px; font-size: 2rem;">Questions?</p>
+  <div style="margin-top: 40px;">
+    <p style="font-size: 1.15rem; color: var(--text-dim);">Malavolta, G. &amp; Thyagarajan, S. A. K. (2019). <em>Homomorphic Time-Lock Puzzles and Applications</em>. IACR ePrint 2019/635.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- NAVIGATION SCRIPT -->
+<!-- ============================================================ -->
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+
+  function updateSlide() {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  function next() { if (current < total - 1) { current++; updateSlide(); } }
+  function prev() { if (current > 0) { current--; updateSlide(); } }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    if (e.key === 'Home') { current = 0; updateSlide(); }
+    if (e.key === 'End') { current = total - 1; updateSlide(); }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.clientX < window.innerWidth / 3) prev(); else next();
+  });
+
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) { diff < 0 ? next() : prev(); }
+  });
+
+  updateSlide();
+</script>
+
+</body>
+</html>
