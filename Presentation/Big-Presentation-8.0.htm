@@ -529,8 +529,8 @@
 <!-- ============================================================ -->
 <div class="slide title-slide active" id="slide-1">
   <h1>Homomorphic Time-Lock Puzzles<br>and Applications</h1>
-  <p class="subtitle">Malavolta &amp; Thyagarajan (2019) → Paper Presentation</p>
-  <p class="authors">Smart Contracts Seminar → University of St. Gallen</p>
+  <p class="subtitle">Malavolta &amp; Thyagarajan (2019) - Paper Presentation</p>
+  <p class="authors"> Secure & Private Computing: Foundations of Ethical Hacking <br> University of St. Gallen</p>
   <p class="authors" style="margin-top: 20px; color: var(--accent);">Spring 2026</p>
 </div>
 
@@ -542,7 +542,7 @@
   <div class="two-col">
     <div>
       <ul>
-        <li>Demo Initiation → Cast your votes!</li>
+        <li>Demo Initiation: Cast your votes!</li>
         <li>Time-Lock Puzzles</li>
         <li>Homomorphic Encryption</li>
         <li>Homomorphic Time-Lock Puzzles</li>
@@ -553,7 +553,7 @@
         <li>Application: Coin Flipping</li>
         <li>Application: E-Voting</li>
         <li>Beyond LHTLP &amp; Recent Advances</li>
-        <li>Live Demonstration → Results!</li>
+        <li>Live Demonstration: Results!</li>
         <li>Summary &amp; Key Takeaways</li>
       </ul>
     </div>
@@ -573,11 +573,11 @@
     <div style="text-align: left;">
       <p style="font-family: 'JetBrains Mono', monospace; font-size: 22px; color: var(--accent2); margin-bottom: 12px;">marley-choleric-leigh.ngrok-free.dev</p>
       <p style="font-size: 20px; color: var(--text-dim);">Your vote is immediately encrypted<br>into a time-lock puzzle.</p>
-      <p style="font-size: 20px; color: var(--text-dim); margin-top: 8px;">No one → not even the server →<br>can see individual votes.</p>
+      <p style="font-size: 20px; color: var(--text-dim); margin-top: 8px;">No one, not even the server<br>can see individual votes.</p>
       <p style="margin-top: 16px; font-size: 22px; color: var(--text);">Votes cast: <span class="highlight2" id="vote-count-slide">0</span></p>
     </div>
   </div>
-  <p style="margin-top: 24px; font-size: 22px; color: var(--accent2);">While you vote, let's learn how this works...</p>
+  <p style="margin-top: 24px; font-size: 22px; color: var(--accent2);">While check who won, let's learn how this works...</p>
 </div>
 
 <!-- ============================================================ -->
@@ -817,7 +817,7 @@
 <div class="slide section-title" id="slide-12">
   <p class="subtitle">Core Contribution</p>
   <h2>Homomorphic Time-Lock Puzzles</h2>
-  <p style="color: var(--text-dim); font-size: 1.2rem;">Eliminating the trusted key holder → decryption through time, not authority</p>
+  <p style="color: var(--text-dim); font-size: 1.2rem;">Eliminating the trusted key holder - decryption through time, not authority</p>
 </div>
 
 <!-- ============================================================ -->
@@ -856,7 +856,7 @@
   </tbody></table>
 
   <div class="card" style="margin-top: 10px; padding: 14px 20px; border-color: var(--accent2);">
-    <p style="font-size: 1.05rem;"><span class="highlight2">PEval outputs a fresh puzzle</span> encoding C(s<sub>1</sub>,...,s<sub>n</sub>) → it can be solved like any other puzzle, or fed into further PEval calls.</p>
+    <p style="font-size: 1.05rem;"><span class="highlight2">PEval outputs a fresh puzzle</span> encoding C(s<sub>1</sub>,...,s<sub>n</sub>), it can be solved like any other puzzle, or fed into further PEval calls.</p>
     <p style="font-size: 1.05rem; margin-top: 6px;"><span class="highlight2">Compactness:</span> The evaluated puzzle size and solving time are <span class="highlight2">independent of the circuit size</span>.</p>
   </div>
 
@@ -867,7 +867,7 @@
     </div>
     <div class="card card-green" style="padding: 16px 20px;">
       <h3 style="margin-bottom: 6px; font-size: 1.15rem;">HTLP: No Trusted Key Holder</h3>
-      <p style="font-size: 1rem;"><span class="highlight2">Anyone</span> can publicly solve the aggregated result through time. No secret decryption key needed → time itself decrypts.</p>
+      <p style="font-size: 1rem;"><span class="highlight2">Anyone</span> can publicly solve the aggregated result through time. No secret decryption key needed, time itself decrypts.</p>
     </div>
   </div>
 </div>
@@ -925,8 +925,8 @@ s := (v · (w<sup>N</sup>)<sup>-1</sup> mod N² - 1) / N</div>
       Z*<sub>N²</sub> &nbsp;≅&nbsp; ⟨1+N⟩ &nbsp;×&nbsp; {x<sup>N</sup> : x ∈ Z*<sub>N</sub>}
     </div>
     <ul>
-      <li style="padding: 4px 0 4px 30px; font-size: 1.05rem;"><span class="math">(1+N)<sup>s</sup></span> encodes the secret s → and <span class="highlight">(1+N)<sup>a</sup> · (1+N)<sup>b</sup> = (1+N)<sup>a+b</sup></span></li>
-      <li style="padding: 4px 0 4px 30px; font-size: 1.05rem;"><span class="math">h<sup>r·N</sup></span> is the "blinding factor" (one-time pad) → it lives in a separate subgroup</li>
+      <li style="padding: 4px 0 4px 30px; font-size: 1.05rem;"><span class="math">(1+N)<sup>s</sup></span> encodes the secret s and <span class="highlight">(1+N)<sup>a</sup> · (1+N)<sup>b</sup> = (1+N)<sup>a+b</sup></span></li>
+      <li style="padding: 4px 0 4px 30px; font-size: 1.05rem;"><span class="math">h<sup>r·N</sup></span> is the "blinding factor" (one-time pad), it lives in a separate subgroup</li>
     </ul>
   </div>
 
@@ -939,7 +939,7 @@ s := (v · (w<sup>N</sup>)<sup>-1</sup> mod N² - 1) / N</div>
     <p style="font-size: 1.05rem;">The blinding factors combine, and the secrets <span class="highlight2">add up</span>. Solving recovers <span class="math">s<sub>1</sub> + s<sub>2</sub></span>.</p>
 
     <div class="example-box" style="margin-top: 10px;">
-      <p class="example-label">Voting example — N = 7, 3 voters, 2 vote Alice</p>
+      <p class="example-label">Voting example: N = 7, 3 voters, 2 vote Alice</p>
       <p class="example-question">v₁ = (1+7)¹ = 8, &nbsp; v₂ = (1+7)¹ = 8, &nbsp; v₃ = (1+7)⁰ = 1 &nbsp;&nbsp;→&nbsp;&nbsp; Product mod 49 = ?</p>
       <button class="reveal-btn" onclick="event.stopPropagation(); this.parentElement.querySelector('.example-answer').classList.toggle('show')">Reveal</button>
       <p class="example-answer">8 × 8 × 1 = 64 mod 49 = <b>15</b> &nbsp;&nbsp;→&nbsp;&nbsp; Decode: (15 − 1) / 7 = <span style="color: var(--accent2); font-weight: 700;">2 votes for Alice ✓</span></p>
@@ -1087,7 +1087,7 @@ v<sub>j</sub> = PSolve(pp, Z̃<sub>j</sub>)
 
 <span style="color: var(--accent2);">// v<sub>j</sub> = total votes for candidate j</span></div>
       <div class="card card-green" style="margin-top: 15px; padding: 15px;">
-        <p>Solve <span class="highlight2">m puzzles</span> total → not n!</p>
+        <p>Solve <span class="highlight2">m puzzles</span> total, not n!</p>
         <p class="small" style="margin-top:5px;">For 1M voters, 5 candidates: 5 puzzles instead of up to 1M</p>
       </div>
     </div>
@@ -1119,7 +1119,7 @@ v<sub>j</sub> = PSolve(pp, Z̃<sub>j</sub>)
 
   <div class="card" style="margin-top: 25px;">
     <h3>No Trusted Authority Needed</h3>
-    <p>The counting operation is <span class="highlight">public</span> → anyone can homomorphically combine puzzles and solve them. This makes the protocol suitable for <span class="highlight2">blockchain-based</span> deployment where the bulletin board is append-only and publicly readable.</p>
+    <p>The counting operation is <span class="highlight">public</span>, anyone can homomorphically combine puzzles and solve them. This makes the protocol suitable for <span class="highlight2">blockchain-based</span> deployment where the bulletin board is append-only and publicly readable.</p>
   </div>
 </div>
 
@@ -1134,7 +1134,7 @@ v<sub>j</sub> = PSolve(pp, Z̃<sub>j</sub>)
       <span class="tag tag-red">Limitations</span>
       <h3 style="color: var(--accent3);">More Complex Voting Needs More than LHTLP</h3>
       <ul>
-        <li><span class="highlight3">LHTLP only supports addition</span> → ideal for simple plurality voting</li>
+        <li><span class="highlight3">LHTLP only supports addition:</span> ideal for simple plurality voting</li>
         <li><span class="highlight3">Ranked-choice / IRV:</span> requires comparisons → MHTLP or fully homomorphic</li>
         <li><span class="highlight3">Weighted voting / STV:</span> needs richer arithmetic and tie-breaking logic</li>
         <li><span class="highlight3">Verifiability:</span> often paired with zero-knowledge proofs of well-formed votes</li>
@@ -1169,7 +1169,7 @@ v<sub>j</sub> = PSolve(pp, Z̃<sub>j</sub>)
     <div style="width: 500px; height: 14px; background: var(--border); border-radius: 7px; margin: 24px auto; overflow: hidden;">
       <div id="results-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 1s ease; border-radius: 7px;"></div>
     </div>
-    <p style="font-size: 20px; color: var(--text-dim);">No individual vote was ever decrypted → only the aggregate result is recovered.</p>
+    <p style="font-size: 20px; color: var(--text-dim);">No individual vote was ever decrypted, only the aggregate result is recovered.</p>
   </div>
 
   <!-- After results are ready -->
@@ -1203,7 +1203,7 @@ v<sub>j</sub> = PSolve(pp, Z̃<sub>j</sub>)
       <ul>
         <li><span class="highlight">Time-Lock Puzzles:</span> encrypt messages for the future using sequential squaring</li>
         <li><span class="highlight">Homomorphism:</span> compute on ciphertexts without decrypting</li>
-        <li><span class="highlight">HTLP:</span> combines both → evaluate functions over puzzles, then solve once</li>
+        <li><span class="highlight">HTLP:</span> combines both, evaluate functions over puzzles, then solve once</li>
         <li><span class="highlight2">Coin Flipping:</span> n parties, 1 puzzle to solve</li>
         <li><span class="highlight2">E-Voting:</span> n voters, m puzzles to solve (not n!)</li>
         <li><span class="highlight2">Live Demo:</span> real LHTLP voting running on Flask</li>
@@ -1248,11 +1248,11 @@ v<sub>j</sub> = PSolve(pp, Z̃<sub>j</sub>)
   <div style="max-width: 900px; margin: 0 auto;">
     <div class="card card-accent" style="margin-bottom: 18px;">
       <span class="emoji">💡</span>
-      <p style="font-size: 28px;"><span class="highlight">Core Innovation:</span> Evaluate first, solve once. HTLPs reduce the computational burden of time-lock-based protocols from <span class="highlight3">O(n · T)</span> to <span class="highlight2">O(m · T)</span> → independent of the number of participants.</p>
+      <p style="font-size: 28px;"><span class="highlight">Core Innovation:</span> Evaluate first, solve once. HTLPs reduce the computational burden of time-lock-based protocols from <span class="highlight3">O(n · T)</span> to <span class="highlight2">O(m · T)</span>, independent of the number of participants.</p>
     </div>
     <div class="card card-green" style="margin-bottom: 18px;">
       <span class="emoji">⛓</span>
-      <p style="font-size: 28px;"><span class="highlight2">Blockchain-Ready:</span> No trusted authority needed. Puzzles are posted on a public bulletin board. Anyone can perform the counting → perfect for decentralized applications.</p>
+      <p style="font-size: 28px;"><span class="highlight2">Blockchain-Ready:</span> No trusted authority needed. Puzzles are posted on a public bulletin board. Anyone can perform the counting, perfect for decentralized applications.</p>
     </div>
     <div class="card card-red">
       <span class="emoji">🔬</span>
