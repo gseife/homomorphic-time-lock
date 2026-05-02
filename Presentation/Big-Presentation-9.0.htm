@@ -68,7 +68,8 @@
     font-size: 16px;
     color: var(--text-dim);
     font-family: 'JetBrains Mono', monospace;
-    z-index: 100;
+    z-index: 250;
+    transition: bottom 0.3s ease;
   }
 
   /* Progress bar */
@@ -89,7 +90,14 @@
     font-size: 14px;
     color: var(--text-dim);
     opacity: 0.5;
-    z-index: 100;
+    z-index: 250;
+    transition: bottom 0.3s ease;
+  }
+
+  /* When the solve-timer is visible, lift the footer info above it */
+  body:has(#solve-timer.visible) .slide-counter,
+  body:has(#solve-timer.visible) .nav-hint {
+    bottom: 60px;
   }
 
   h1 {
@@ -549,7 +557,7 @@
 <body>
 
 <div class="progress-bar" id="progress" style="width: 4%;"></div>
-<div class="slide-counter" id="counter">1 / 26</div>
+<div class="slide-counter" id="counter">1 / 27</div>
 <div class="nav-hint">Arrow keys / Click to navigate</div>
 
 <!-- Always-visible solve timer -->
@@ -1263,7 +1271,7 @@
       </div>
     </div>
     <p style="margin-top: 30px; font-size: 22px; color: var(--accent);">
-      No individual vote was ever decrypted → only the aggregate was recovered through time.
+      No individual vote was ever decrypted, only the aggregate was recovered through time.
     </p>
   </div>
 </div>
@@ -1305,6 +1313,42 @@
   <p class="subtitle" style="margin-top: 10px;">Questions?</p>
   <div style="margin-top: 40px;">
     <p class="small">Paper: Malavolta, G. &amp; Thyagarajan, S. A. K. (2019). <em>Homomorphic Time-Lock Puzzles and Applications</em>. IACR ePrint 2019/635.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 27: Reviewer Q&A — five representative Q&A pairs -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-27">
+  <h2 style="margin-bottom: 18px;">Your Questions and Our Answers</h2>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+
+    <div class="card card-accent" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight" style="font-weight: 700;">Q1.</span> How is the time parameter <span class="math">T</span> chosen, and who maintains it as hardware gets faster?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> <span class="math">T</span> = desired delay × fastest known squarings/sec, with a 2–4× safety margin for ASIC speed-ups. Open communities (drand, IACR) republish reference benchmarks over time.</p>
+    </div>
+
+    <div class="card card-green" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight2" style="font-weight: 700;">Q2.</span> What happens if a voter submits a puzzle that encodes garbage instead of a valid vote?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> The tally would be corrupted. Defense: a NIZK proof of well-formedness (ballot ∈ {0,1}<sup>m</sup>), checked once at submission, a few KB, ≈ 5–50 ms per ballot.</p>
+    </div>
+
+    <div class="card card-red" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight3" style="font-weight: 700;">Q3.</span> Can the trusted setup be eliminated while keeping efficiency?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Open problem. Class groups (Wesolowski) give public-coin parameters at 5–10× overhead; a fully trustless RSA-style setup remains a research frontier.</p>
+    </div>
+
+    <div class="card card-accent" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight" style="font-weight: 700;">Q4.</span> How practical are HTLPs at million-voter scale?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Per ballot ≈ m × 768 B at 128-bit security. The win: solving cost is <span class="math">O(m·T)</span> regardless of n, ballot storage moves to a data-availability layer.</p>
+    </div>
+
+    <div class="card card-green" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight2" style="font-weight: 700;">Q5.</span> Can fully homomorphic HTLP be built without indistinguishability obfuscation?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Not yet. Witness encryption and multilinear maps did not pan out; <span class="highlight2">lattice-based HTLPs (2024–25)</span> are the most promising path toward bounded-depth, post-quantum FHTLP.</p>
+    </div>
+
   </div>
 </div>
 

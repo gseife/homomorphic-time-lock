@@ -6,6 +6,14 @@ from sympy import isprime, randprime
 
 app = Flask(__name__)
 
+# Allow the presentation (loaded from file://) to poll the API.
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
 # --- Cryptography Setup ---
 def generate_strong_prime(bits):
     while True:

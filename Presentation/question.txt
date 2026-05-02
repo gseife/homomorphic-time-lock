@@ -1,0 +1,186 @@
+2: accept
+This research introduces Homomorphic Time-Lock Puzzles (HTLPs), a generalization of classical time-lock puzzles that supports evaluating functions over a set of puzzles without first solving them. The motivation is that many TLP-based protocols (large-scale e-voting with unopened votes, sealed-bid auctions, multi-party coin flipping, fair contract signing) currently require brute-forcing a number of puzzles proportional to the number of participants. This unfortunately does not scale well. An HTLP lets anyone homomorphically compute a circuit over a specific number of puzzles to produce a single encoding. This is then solved exactly once. The authors propose three constructions: a linearly homomorphic HTLP based on the Paillier blueprint (secure under sequential squaring and DCR); a multiplicatively homomorphic HTLP (secure under DDH); and a “fully homomorphic” HTLP built from obfuscation. They also sketch a semi-compact construction for branching programs, and apply HTLPs to the four motivating protocols, showing meaningful scalability.
+
+Strengths:
+• The linearly homomorphic construction is well done. the setup phase and re-randomization work around the shared-factorization problem and the Jacobi-symbol distinguishability issue that made the naive Paillier adaptation fail.
+• The e-voting, coin-flipping, and contract-signing applications provide interesting performance and results
+• Technical overview highlights each construction and its pitfalls before the formal explanation, which helps non-experts.
+• Multiple constructions under well-established assumptions give readers concrete options with different expressivity and cost.
+
+Weaknesses:
+• The fully homomorphic HTLP requires indistinguishability obfuscation, which has no practically usable instantiation today.
+• The compactness requirement and the setup phase complicate deployment.
+• Security assumes puzzles are honestly generated in the applications, and the paper offloads this check to “standard cryptographic tools”.
+
+Questions:
+• How is the time parameter T chosen for a given application, and who maintains it as hardware gets faster?
+• What happens in the e-voting protocol if a voter submits a puzzle that encodes garbage instead of a valid vote?
+• How large is the setup-phase output, and does it need to be regenerated periodically?
+
+#########################################
+
+2: accept
+Summary
+This paper introduces Homomorphic Time-Lock Puzzles (HTLPs), an extension of classical time-lock puzzles that allows computation over encrypted-for-the-future messages without solving them first. The core idea is that one can homomorphically evaluate a function over a set of puzzles to obtain a single puzzle encoding the function's output, dramatically reducing the cost of solving many puzzles individually. The authors present three constructions, linearly homomorphic, multiplicatively homomorphic, and fully homomorphic, based on increasingly strong assumptions including sequential squaring, DDH, DCR, and indistinguishability obfuscation. They demonstrate the practical value of the primitive through applications in e-voting, multi-party coin flipping, sealed-bid auctions, and fair contract signing.
+
+Strengths
+Well-motivated problem with concrete impact. The paper cleanly identifies a genuine scalability bottleneck in time-lock puzzle-based protocols — the need to solve potentially millions of puzzles — and provides a principled, constructive solution. The e-voting example makes the improvement immediately tangible: the number of puzzles to solve shrinks from the number of offline voters to the number of candidates.
+
+Technically cohesive construction.The linearly and multiplicatively homomorphic schemes are elegant and build naturally on well-understood algebraic structures (Paillier, DDH over RSA groups), with clear correctness proofs. The extensions for reusable setup and combining puzzles of different hardness are non-trivial additions that meaningfully improve practicality.
+
+Weaknesses
+
+The fully homomorphic construction is primarily a feasibility result. The FHTLP relies on indistinguishability obfuscation (iO), which currently lacks efficient practical instantiations. The authors acknowledge this but do not discuss concrete parameter sizes, performance estimates, or even rough feasibility for any real use case, making the most general construction feel disconnected from the practical motivation laid out in the introduction.
+
+Security model leaves deployment gaps unaddressed. The paper explicitly sets aside vote authenticity, privacy, and the honest generation of puzzles, delegating these to "standard techniques." However, in the target applications — particularly e-voting — these are not minor orthogonal concerns but deeply intertwined with the protocol design. The absence of even a sketch of how zero-knowledge proofs would integrate makes the end-to-end security picture incomplete.
+Questions
+
+The reusable setup (Section 5.2) relies on the strong sequential squaring assumption. Could the authors comment on how this assumption compares in plausibility to the standard one, and whether there is any known evidence that prior knowledge of the group structure genuinely does not help an adversary?
+
+For the sealed-bid auction application, the authors note that fully homomorphic time-lock puzzles would be required, making the protocol currently impractical. Is there a restricted auction format (e.g., bids from a small public set of values) that could be handled by the more efficient linear or multiplicative constructions?
+
+###################################
+
+2: accept
+Summary
+
+Time-lock puzzles let you encrypt a message so it can only be decrypted after a certain amount of time has passed, by forcing the solver to perform a long sequential computation. The problem is that when many users fail to reveal their secrets, for example, in an e-voting protocol, each puzzle must be solved independently, requiring massive parallel computation that scales with the number of users. Malavolta and Thyagarajan introduce homomorphic time-lock puzzles (HTLPs), which let anyone compute a function over a set of puzzles without solving them first, producing a single output puzzle that encodes the function result. They construct linearly and multiplicatively homomorphic schemes from RSA-based assumptions, and a fully homomorphic scheme using indistinguishability obfuscation as a feasibility result. In the e-voting application, instead of solving one puzzle per offline voter, all votes are summed homomorphically, and only one puzzle per candidate needs to be solved, regardless of how many users go offline.
+
+Strengths
+
+The core idea is clean and practically motivated: reducing the number of puzzles to solve from potentially millions down to one is a genuine scalability improvement. The RSA-based constructions are efficient and come with concrete security proofs under standard assumptions. The applications to e-voting, coin flipping, and contract signing are well-chosen and clearly demonstrate the value of the primitive.
+
+Weaknesses
+
+The fully homomorphic construction relies on indistinguishability obfuscation, which currently has no efficient instantiation, making it a theoretical result only. All constructions require a trusted setup, and while the authors show the setup can be reused under a stronger assumption, this assumption has not been as thoroughly studied as the standard ones. The paper also does not evaluate the concrete performance of the schemes, making it hard to assess practical feasibility.
+
+Questions
+
+1. The e-voting application assumes puzzles are honestly generated, enforced via zero-knowledge proofs. How expensive would these proofs be in practice, and would they dominate the cost of the protocol?
+2. The reusable setup requires a stronger version of the sequential squaring assumption. How does the security guarantee degrade as more puzzles are generated under the same setup parameters?
+
+#################################
+
+1: weak accept
+Summary
+The paper introduces homomorphic time-lock puzzles (HTLPs), which allow arbitrary functions to be evaluated over time-locked secrets without solving the puzzles first and proposes applications such as e-voting and multi-party coin flipping.
+
+Contributions
+Formalizes HTLPs with security definitions. Gives a linearly homomorphic construction based on sequential squaring, DDH and DCR in RSA groups and a multiplicatively homomorphic variant from sequential squaring and DDH. Extends the schemes to reusable setups under a strong sequential squaring assumption and sketches how to combine puzzles of different hardness parameters.
+
+Weaknesses
+The RSA-based constructions require a trusted setup, as the factorization of N gives a shortcut that breaks security; the public-coin variant is left open. The reusable setup relies on a new strong sequential squaring assumption whose hardness is less studied than the original. Applications are presented informally and assume well-formed puzzles.
+
+Strengths
+The linearly and multiplicatively homomorphic constructions seem clean and efficient.
+The applications, especially e-voting and contract signing via RSA-aggregate signatures, show a clear practical payoff: one puzzle is solved regardless of the number of offline participants.
+
+Questions
+1. How sensitive is the reusable security proof to the strong sequential squaring assumption?
+2. What concrete parameter sizes would the e-voting protocol require for a realistic election?
+
+################################
+
+1: weak accept
+Summary
+The paper introduces Homomorphic Time-Lock Puzzles. Time-lock puzzles allow information to be hidden until a certain amount of time has passed. The main problem with traditional time-lock puzzles is that, in large systems, many puzzles may need to be solved individually, which can be computationally expensive. The authors propose a homomorphic version, where functions can be evaluated directly on puzzles without solving them first. This means that only the final resulting puzzle has to be solved. The paper presents different constructions and discusses applications such as e-voting, multi-party coin flipping, sealed-bid auctions, and fair contract signing.
+
+Strengths and Weaknesses
+A major strength of the paper is that it addresses a clear scalability limitation of classical time-lock puzzles. In applications with many users, such as e-voting, solving many individual puzzles can become impractical. The proposed homomorphic approach is convincing because it reduces this burden by allowing computations to be performed before opening the puzzle.
+
+Another strength is the broad relevance of the concept. The paper does not only introduce a theoretical primitive, but also shows how it could improve several cryptographic protocols. The e-voting example is especially useful because it clearly explains why homomorphic time-lock puzzles can be more efficient than classical time-lock puzzles.
+
+A further strength is that the paper presents several constructions for different function classes, including linearly homomorphic, multiplicatively homomorphic, and fully homomorphic time-lock puzzles. This gives a good overview of what is possible and where the technical limits currently are.
+
+A weakness is that the paper is highly theoretical and relies on several strong cryptographic assumptions. Especially the fully homomorphic construction depends on advanced tools such as indistinguishability obfuscation, which makes it less practical. Another limitation is that the paper focuses more on feasibility and theoretical constructions than on concrete implementation or performance evaluation. Therefore, it is not always clear how practical these schemes would be in real-world systems.
+
+Personal Opinion
+In my opinion, the paper presents an interesting and creative extension of time-lock puzzles. I think the motivation is strong because the authors start from a concrete limitation of existing time-lock puzzle applications: solving many puzzles individually does not scale well. The idea of first computing over encrypted future values and then solving only one final puzzle is elegant and easy to understand conceptually.
+
+What I find especially convincing is the connection to practical scenarios such as e-voting and multi-party coin flipping. These examples help to show why the concept matters beyond pure cryptographic theory. From a computer science perspective, I also find the analogy to homomorphic encryption interesting, because the paper transfers a similar idea to the setting of time-based cryptography.
+
+However, I think the practical impact of the paper is still uncertain. Some constructions seem efficient for limited operations, but the more powerful fully homomorphic version relies on very strong and complex assumptions. I would have liked to see more discussion about realistic deployment, implementation costs, and whether the proposed schemes could actually be used in large-scale systems such as blockchain voting.
+
+Questions
+How efficient would homomorphic time-lock puzzles be in a real large-scale voting system with thousands or millions of users?
+Can fully homomorphic time-lock puzzles be constructed without relying on very strong assumptions such as indistinguishability obfuscation?
+
+############################
+
+0: borderline paper
+Summary
+The paper introduces homomorphic time-lock puzzles (HTLPs), a cryptographic primitive that extends classical time-lock puzzles by enabling computation over encrypted, time-delayed data. Instead of solving many puzzles individually, one can evaluate a function over multiple puzzles and then solve a single resulting puzzle. This significantly reduces the computational burden in distributed protocols. The work also formalizes security, correctness, and compactness properties for this new primitive.
+
+Contributions
+The authors define homomorphic time-lock puzzles and extend the classical model with an evaluation algorithm that supports computation over hidden values. They present constructions for different function classes, including linearly homomorphic and multiplicatively homomorphic schemes, as well as a fully homomorphic variant based on obfuscation. The paper introduces compactness as a key requirement, ensuring that evaluation remains efficient regardless of the time parameter. It also demonstrates applications such as scalable e-voting, multi-party coin flipping, and fair contract signing, where the number of puzzles that must be solved is drastically reduced.
+
+Weaknesses
+Some constructions rely on strong cryptographic assumptions, such as indistinguishability obfuscation, which are not practical today. The fully homomorphic scheme is mainly of theoretical interest and not suitable for deployment. Certain variants require a trusted setup or stronger assumptions for reusability, which may limit applicability. The paper does not provide empirical evaluation, leaving practical performance and overhead unclear.
+
+Strengths
+The paper addresses a fundamental scalability limitation of time-lock puzzles and proposes a clean and general solution. It introduces a novel abstraction that parallels homomorphic encryption but in a time-delayed setting. The work is theoretically rigorous, with clear definitions and security proofs, and provides flexible constructions for different levels of functionality. The applications demonstrate concrete benefits, especially for decentralized protocols where computation costs are critical.
+
+Questions
+- Is it possible to construct fully homomorphic time-lock puzzles without relying on indistinguishability obfuscation?
+- How do these schemes perform in practical systems such as blockchains in terms of computation and communication overhead?
+- Can the trusted setup requirement be eliminated while maintaining efficiency?
+
+###########################
+
+1: weak accept
+Summary
+The paper introduces homomorphic time-lock puzzles, which extend time-lock puzzles by allowing computations on encrypted values without solving them first. The authors present constructions for different function classes and show how this reduces the need to solve many individual puzzles. This improves scalability in applications like e-voting and multi-party protocols.
+
+Strengths
+The main contribution is a clear and well-motivated extension of time-lock puzzles that addresses scalability issues. The paper also provides concrete constructions based on established cryptographic assumptions and connects them effectively to practical applications.
+
+Weaknesses
+Some constructions rely on strong assumptions like indistinguishability obfuscation, limiting practical use. The work is mostly theoretical and lacks empirical evaluation, making real-world performance unclear.
+
+Questions
+- How practical are the proposed schemes in real-world systems with many participants?
+- Can the fully homomorphic version be built without relying on heavy tools like obfuscation?
+- What are the main bottlenecks when implementing HTLPs in large-scale applications like voting?
+
+#######################
+
+	
+2: accept
+Summary
+The paper introduces Homomorphic Time-Lock Puzzles, which allow functions to be evaluated over locked secrets before the puzzles are solved. The main research question is whether this can reduce the cost of protocols where many time-lock puzzles would otherwise need to be opened individually. The authors propose constructions for linear, multiplicative, and fully homomorphic settings and show applications such as e-voting, coin flipping, auctions, and contract signing.
+
+Strengths
+- The e-voting example clearly shows why normal time-lock puzzles do not scale well.
+- The discussion on reusable setup is important, because otherwise the public parameters would have to be refreshed too often.
+- The authors are honest that the fully homomorphic version is mainly theoretical and not practical yet.
+
+Weaknesses
+- The paper gives no implementation or benchmarks, so it is hard to judge practical efficiency.
+- In the e-voting example, important parts such as vote privacy, authentication, and validity proofs are mostly assumed away.
+- The paper mentions that standard cryptographic tools can solve some side problems, but does not discuss their concrete overhead.
+
+Personal Opinion
+I think the paper presents an interesting idea. The concept of evaluating first and solving later is a strong answer to a real scalability problem. However, I see the paper mostly as a theoretical contribution. The linear and multiplicative constructions seem much more realistic than the fully homomorphic one.
+
+Questions
+1. In the e-voting application, how expensive would it be to prove that each voter created a valid vote without revealing it?
+2. Is there a realistic path toward practical fully homomorphic HTLPs, or will useful applications mostly stay limited to linear and multiplicative cases?
+
+######################
+	
+1: weak accept
+Summary
+This paper introduces homomorphic time-lock puzzles and their applications, by allowing one to encrypt messages for the future by generating a puzzle with solution s that is hidden until a certain amount of time has elapsed. Homomorphic computation allows for operations to be performed on encrypted data without unlocking it. Some applications of HTLPs are e-voting, auctions and contract signing.
+
+Strengths of this implementation
+1. There are real-world applications that HTLPs can be used for such as e-voting where trusted third-parties are not needed.
+2. Demonstrate effective use of well-established cryptographic techniques, such as RSA groups, Paillier-style encodings, and Diffie-Hellman assumptions
+
+Weakness of this implementation
+1. The system retains an inherent sequential bottleneck, as solving the puzzle still requires T sequential steps. This can lead to inefficiencies for large delay parameters, especially in time-sensitive applications.
+2. The overall mathematical complexity of the schemes may hinder adoption. The constructions are intricate and require careful implementation, making them difficult to audit and potentially prone to subtle errors in practice.
+
+Questions
+1. When would you choose HTLP instead of existing secure computation tools?
+2. How large can T be before the system becomes unusable?
+

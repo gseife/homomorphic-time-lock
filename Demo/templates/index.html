@@ -1,43 +1,347 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>HTLP Live E-Voting</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-        button { font-size: 20px; padding: 15px 30px; margin: 10px; cursor: pointer; }
-        #message { margin-top: 20px; font-weight: bold; color: green; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTLP Live E-Voting</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #faf6ed;
+      --bg-card: #ffffff;
+      --accent: #4a7a8c;
+      --accent2: #5fa18f;
+      --accent3: #d4795f;
+      --accent-soft: #b8a8d4;
+      --text: #1d2538;
+      --text-dim: #6b7280;
+      --border: #e7e0cf;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at 92% 8%, rgba(244, 200, 184, 0.55) 0%, rgba(244, 200, 184, 0) 32%),
+        radial-gradient(circle at 4% 38%, rgba(200, 230, 221, 0.55) 0%, rgba(200, 230, 221, 0) 28%),
+        radial-gradient(circle at 78% 92%, rgba(247, 224, 178, 0.5) 0%, rgba(247, 224, 178, 0) 30%),
+        radial-gradient(circle at 22% 96%, rgba(214, 200, 232, 0.45) 0%, rgba(214, 200, 232, 0) 28%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 18px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.15;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-dim);
+      font-weight: 300;
+      margin-bottom: 26px;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid #d4cdb8;
+      border-radius: 14px;
+      padding: 28px 22px;
+      box-shadow: 0 1px 2px rgba(29, 37, 56, 0.06), 0 6px 18px rgba(29, 37, 56, 0.07);
+    }
+
+    .prompt {
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .candidate-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 18px 0 8px;
+    }
+
+    button.candidate-btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      padding: 20px 26px;
+      border-radius: 12px;
+      border: 2px solid;
+      cursor: pointer;
+      background: var(--bg-card);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      letter-spacing: 0.3px;
+    }
+
+    button.candidate-btn:active { transform: translateY(0); }
+    button.candidate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    button.alice {
+      color: var(--accent3);
+      border-color: var(--accent3);
+    }
+    button.alice:hover:not(:disabled) {
+      background: rgba(212, 121, 95, 0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(212, 121, 95, 0.25);
+    }
+
+    button.bob {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    button.bob:hover:not(:disabled) {
+      background: rgba(74, 122, 140, 0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(74, 122, 140, 0.25);
+    }
+
+    .info {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+
+    .status-card {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0;
+    }
+    .status-card.visible { display: flex; }
+
+    .status-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 700;
+    }
+    .status-icon.encrypting {
+      background: rgba(74, 122, 140, 0.18);
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .status-icon.success {
+      background: rgba(95, 161, 143, 0.18);
+      color: var(--accent2);
+      border: 2px solid var(--accent2);
+    }
+    .status-icon.error {
+      background: rgba(212, 121, 95, 0.18);
+      color: var(--accent3);
+      border: 2px solid var(--accent3);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.95); }
+    }
+
+    .status-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .status-msg {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      max-width: 320px;
+    }
+    .status-msg strong { color: var(--text); }
+
+    .voted-for {
+      display: inline-block;
+      padding: 8px 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      font-size: 16px;
+      text-transform: uppercase;
+    }
+    .voted-for.alice { background: rgba(212, 121, 95, 0.18); color: var(--accent3); }
+    .voted-for.bob { background: rgba(74, 122, 140, 0.18); color: var(--accent); }
+
+    .puzzle-pill {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: rgba(74, 122, 140, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(74, 122, 140, 0.32);
+      padding: 4px 12px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    .live-counter {
+      margin-top: 22px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .live-counter .count {
+      color: var(--accent2);
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .live-counter .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent2);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .footer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      opacity: 0.7;
+    }
+  </style>
 </head>
 <body>
-    <h1>Vote for your Candidate!</h1>
-    <p>Your vote is secured inside a cryptographic time-lock puzzle.</p>
-    
-    <div id="voting-booth">
-        <button onclick="vote('Alice')">Vote Alice</button>
-        <button onclick="vote('Bob')">Vote Bob</button>
-    </div>
-    
-    <div id="message"></div>
+  <div class="container">
+    <h1>Cast Your Vote</h1>
+    <p class="subtitle">Your ballot is locked into a homomorphic time-lock puzzle -> secret until time T elapses.</p>
 
-    <script>
-        function vote(candidate) {
-            document.getElementById('voting-booth').style.display = 'none';
-            document.getElementById('message').innerText = "Encrypting vote into time-lock puzzle... please wait.";
-            
-            let formData = new URLSearchParams();
-            formData.append('candidate', candidate);
-            
-            fetch('/vote', { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    document.getElementById('message').innerText = "Vote successfully locked! Look at the presentation screen.";
-                } else {
-                    document.getElementById('message').innerText = data.message || "Error casting vote.";
-                    document.getElementById('voting-booth').style.display = 'block';
-                }
-            });
-        }
-    </script>
+    <div class="card">
+      <div id="voting-booth">
+        <p class="prompt">Choose your candidate</p>
+        <div class="candidate-buttons">
+          <button class="candidate-btn alice" onclick="vote('Alice')">Vote Alice</button>
+          <button class="candidate-btn bob" onclick="vote('Bob')">Vote Bob</button>
+        </div>
+        <p class="info">No one, not even the server,<br>can see your individual vote.</p>
+      </div>
+
+      <div id="status-card" class="status-card">
+        <div id="status-icon" class="status-icon encrypting">&#128274;</div>
+        <p id="status-title" class="status-title">Encrypting your vote&hellip;</p>
+        <p id="status-msg" class="status-msg">Generating your time-lock puzzle.</p>
+        <div id="voted-for-pill" style="display: none;"></div>
+        <div id="puzzle-pill" class="puzzle-pill" style="display: none;"></div>
+      </div>
+    </div>
+
+    <div class="live-counter">
+      <span class="dot"></span>
+      Live: <span id="live-count" class="count">0</span> ballots encrypted
+    </div>
+
+    <p class="footer">Secure & Private Computing: Foundations of Ethical Hacking</p>
+  </div>
+
+  <script>
+    function setStatus(state, title, msg) {
+      const icon = document.getElementById('status-icon');
+      icon.className = 'status-icon ' + state;
+      if (state === 'encrypting') icon.innerHTML = '&#128274;';
+      else if (state === 'success') icon.textContent = '✓';
+      else icon.textContent = '!';
+      document.getElementById('status-title').textContent = title;
+      document.getElementById('status-msg').innerHTML = msg;
+    }
+
+    function showBooth() {
+      document.getElementById('status-card').classList.remove('visible');
+      document.getElementById('voted-for-pill').style.display = 'none';
+      document.getElementById('puzzle-pill').style.display = 'none';
+      document.getElementById('voting-booth').style.display = 'block';
+    }
+
+    function vote(candidate) {
+      document.getElementById('voting-booth').style.display = 'none';
+      document.getElementById('status-card').classList.add('visible');
+      setStatus('encrypting', 'Encrypting your vote…', 'Generating your time-lock puzzle.');
+
+      const formData = new URLSearchParams();
+      formData.append('candidate', candidate);
+
+      fetch('/vote', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'success') {
+            setStatus(
+              'success',
+              'Vote locked!',
+              'Your ballot was encrypted as <strong>#' + data.total_votes + '</strong>.<br>Watch the presentation screen for results.'
+            );
+
+            const pill = document.getElementById('voted-for-pill');
+            pill.className = 'voted-for ' + candidate.toLowerCase();
+            pill.textContent = 'You voted ' + candidate;
+            pill.style.display = 'inline-block';
+
+            const puzzle = document.getElementById('puzzle-pill');
+            puzzle.textContent = 'Ballot #' + data.total_votes + ' → LHTLP puzzle pair';
+            puzzle.style.display = 'inline-block';
+
+            document.getElementById('live-count').textContent = data.total_votes;
+          } else {
+            setStatus('error', 'Vote rejected', data.message || 'Voting may already be closed.');
+            setTimeout(showBooth, 3000);
+          }
+        })
+        .catch(() => {
+          setStatus('error', 'Network error', 'Could not reach the server. Please try again.');
+          setTimeout(showBooth, 3000);
+        });
+    }
+
+    function pollCount() {
+      fetch('/status')
+        .then(r => r.json())
+        .then(data => {
+          const el = document.getElementById('live-count');
+          if (el) el.textContent = data.votes;
+        })
+        .catch(() => {});
+    }
+    setInterval(pollCount, 2000);
+    pollCount();
+  </script>
 </body>
 </html>
