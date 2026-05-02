@@ -66,28 +66,69 @@ class LHTLP:
             v_tilde = (v_tilde * v) % self.N2
         return (u_tilde, v_tilde)
         
-    def PSolve(self, puzzle):
+    def PSolve(self, puzzle, progress_cb=None):
         u, v = puzzle
         w = u
-        
-        # <--- NEW: Update progress efficiently (every 1% to avoid lagging)
-        update_interval = max(1, self.T // 100) 
+
+        update_interval = max(1, self.T // 100)
         for i in range(self.T):
             w = pow(w, 2, self.N)
             if i % update_interval == 0:
                 self.current_iteration += update_interval
+                if progress_cb is not None:
+                    progress_cb(i + update_interval)
+        if progress_cb is not None:
+            progress_cb(self.T)
 
         w_N_inv = mod_inverse(pow(w, self.N, self.N2), self.N2)
         return (((v * w_N_inv) % self.N2) - 1) // self.N
 
-# Initialize HTLP 
-htlp = LHTLP(bits=128, target_seconds=150)
+# --- Startup prompt: ask for tally duration ---
+def prompt_target_minutes():
+    print()
+    print("=" * 60)
+    print(" HTLP Demo - tally duration configuration")
+    print("=" * 60)
+    print(" Total time the audience waits while both Alice's and")
+    print(" Bob's puzzles are solved. Each puzzle gets half of this.")
+    while True:
+        raw = input(" Total tally time in MINUTES [default 5]: ").strip()
+        if not raw:
+            return 5.0
+        try:
+            v = float(raw)
+            if v <= 0:
+                print("  -> Please enter a positive number.")
+                continue
+            return v
+        except ValueError:
+            print("  -> Please enter a number (e.g. 5 or 2.5).")
+
+def fmt_per_puzzle(seconds):
+    """Human-readable label used inside status messages."""
+    if seconds < 60:
+        return f"~{int(round(seconds))}s"
+    minutes = seconds / 60
+    if abs(minutes - round(minutes)) < 0.05:
+        return f"~{int(round(minutes))} min"
+    return f"~{minutes:.1f} min"
+
+target_total_minutes = prompt_target_minutes()
+target_total_seconds = max(4, int(round(target_total_minutes * 60)))
+target_per_puzzle = max(2, target_total_seconds // 2)
+per_puzzle_label = fmt_per_puzzle(target_per_puzzle)
+print(f" Target: {target_total_minutes:g} min total ({per_puzzle_label} per puzzle)")
+print()
+
+# Initialize HTLP
+htlp = LHTLP(bits=128, target_seconds=target_per_puzzle)
 
 # --- Global State ---
-votes = []          
+votes = []
 is_solving = False
 results = None
 progress_msg = "Waiting for votes..."
+solve_progress = {"Alice": 0, "Bob": 0}  # per-candidate squaring counter
 
 # --- Routes ---
 @app.route('/')
@@ -119,41 +160,63 @@ def start_tally():
     global is_solving, progress_msg
     if not is_solving and votes:
         is_solving = True
-        htlp.current_iteration = 0  # Reset progress tracker
+        htlp.current_iteration = 0
+        solve_progress["Alice"] = 0
+        solve_progress["Bob"] = 0
         progress_msg = "Homomorphically adding puzzles..."
         threading.Thread(target=run_tally).start()
     return jsonify({"status": "started"})
 
 @app.route('/status')
 def status():
-    # <--- NEW: Calculate percentage based on 2 puzzles (Alice + Bob)
-    if is_solving:
-        total_squarings_needed = htlp.T * 2
-        pct = int((htlp.current_iteration / total_squarings_needed) * 100)
-        pct = min(100, pct)
+    if results:
+        alice_pct = 100.0
+        bob_pct = 100.0
+        remaining_seconds = 0.0
+    elif is_solving and htlp.T:
+        alice_frac = min(1.0, solve_progress["Alice"] / htlp.T)
+        bob_frac = min(1.0, solve_progress["Bob"] / htlp.T)
+        alice_pct = alice_frac * 100.0
+        bob_pct = bob_frac * 100.0
+        remaining_seconds = ((1.0 - alice_frac) + (1.0 - bob_frac)) * target_per_puzzle
     else:
-        pct = 100 if results else 0
+        alice_pct = 0.0
+        bob_pct = 0.0
+        remaining_seconds = float(target_total_seconds)
+
+    combined = (alice_pct + bob_pct) / 2.0
 
     return jsonify({
-        "solving": is_solving, 
-        "results": results, 
+        "solving": is_solving,
+        "results": results,
         "votes": len(votes),
         "message": progress_msg,
-        "progress": pct  # <--- NEW: Send to frontend
+        "progress": round(combined, 2),
+        "alice_progress": round(alice_pct, 2),
+        "bob_progress": round(bob_pct, 2),
+        "target_per_puzzle": target_per_puzzle,
+        "target_total": target_total_seconds,
+        "remaining_seconds": round(remaining_seconds, 2),
     })
 
 def run_tally():
     global results, is_solving, progress_msg
-    
+
     alice_eval = htlp.PEval([v[0] for v in votes])
     bob_eval = htlp.PEval([v[1] for v in votes])
-    
-    progress_msg = "Solving time-lock for Alice (~2.5 mins)..."
-    alice_total = htlp.PSolve(alice_eval)
-    
-    progress_msg = "Solving time-lock for Bob (~2.5 mins)..."
-    bob_total = htlp.PSolve(bob_eval)
-    
+
+    progress_msg = f"Solving time-lock for Alice ({per_puzzle_label})..."
+    alice_total = htlp.PSolve(
+        alice_eval,
+        progress_cb=lambda n: solve_progress.update({"Alice": n}),
+    )
+
+    progress_msg = f"Solving time-lock for Bob ({per_puzzle_label})..."
+    bob_total = htlp.PSolve(
+        bob_eval,
+        progress_cb=lambda n: solve_progress.update({"Bob": n}),
+    )
+
     results = {"Alice": alice_total, "Bob": bob_total}
     progress_msg = "Tally complete!"
     is_solving = False

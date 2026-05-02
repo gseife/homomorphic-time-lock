@@ -94,10 +94,39 @@
     transition: bottom 0.3s ease;
   }
 
-  /* When the solve-timer is visible, lift the footer info above it */
+  /* Viewport-fixed reference footer (driven by data-refs on each slide).
+     Styled to match .slide-counter: same font, size, color, no accents. */
+  .ref-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 84px;
+    padding: 0 220px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.5;
+    z-index: 220;
+    display: none;
+    pointer-events: none;
+    transition: bottom 0.3s ease;
+  }
+  .ref-footer.visible { display: block; }
+  .ref-footer .ref-tag { color: var(--text-dim); font-weight: 400; }
+  .ref-footer .ref-divider { color: var(--text-dim); margin: 0 10px; }
+
+  /* Counter / nav-hint placement:
+       - default                       : 20 px
+       - solve-timer visible           : 60 px (clears 48 px timer)
+       - ref-footer visible            : 84 px (clears refs + any timer) */
   body:has(#solve-timer.visible) .slide-counter,
   body:has(#solve-timer.visible) .nav-hint {
-    bottom: 60px;
+    bottom: 88px;
+  }
+  body:has(.ref-footer.visible) .slide-counter,
+  body:has(.ref-footer.visible) .nav-hint {
+    bottom: 112px;
   }
 
   h1 {
@@ -442,42 +471,65 @@
     margin: 0 auto;
   }
 
-  /* Always-visible solve timer bar */
+  /* Always-visible solve timer bar (two stacked per-candidate bars) */
   #solve-timer {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 48px;
+    height: 76px;
     background: rgba(255, 252, 244, 0.96);
     border-top: 1px solid var(--border);
     box-shadow: 0 -2px 10px rgba(29, 37, 56, 0.06);
     display: none;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    gap: 24px;
     z-index: 200;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--text-dim);
     padding: 0 30px;
   }
   #solve-timer.visible { display: flex; }
+  #solve-timer .timer-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  #solve-timer .timer-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  #solve-timer .timer-bar-row .label {
+    width: 48px;
+    text-align: right;
+    font-weight: 600;
+  }
+  #solve-timer .timer-bar-row .label.alice { color: var(--accent3); }
+  #solve-timer .timer-bar-row .label.bob   { color: var(--accent); }
   #solve-timer .timer-progress {
-    width: 300px;
-    height: 10px;
+    width: 280px;
+    height: 8px;
     background: var(--border);
-    border-radius: 5px;
+    border-radius: 4px;
     overflow: hidden;
   }
   #solve-timer .timer-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    transition: width 1s ease;
+    transition: width 0.6s ease;
     width: 0%;
   }
-  #solve-timer .timer-text { color: var(--accent2); font-weight: 600; }
-  #solve-timer .timer-status { color: var(--text); }
+  #solve-timer .timer-fill.alice { background: var(--accent3); }
+  #solve-timer .timer-fill.bob   { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  #solve-timer .timer-bar-row .pct {
+    width: 42px;
+    color: var(--text-dim);
+  }
+  #solve-timer .timer-text   { color: var(--accent2); font-weight: 600; }
+  #solve-timer .timer-status { color: var(--text); max-width: 240px; line-height: 1.3; }
 
   /* Example reveal boxes */
   .example-box {
@@ -557,13 +609,27 @@
 <body>
 
 <div class="progress-bar" id="progress" style="width: 4%;"></div>
-<div class="slide-counter" id="counter">1 / 27</div>
+<div class="slide-counter" id="counter">1 / 28</div>
 <div class="nav-hint">Arrow keys / Click to navigate</div>
 
-<!-- Always-visible solve timer -->
+<!-- Per-slide reference footer (populated by updateSlide from data-refs) -->
+<div id="ref-footer" class="ref-footer"></div>
+
+<!-- Always-visible solve timer (two stacked bars: Alice + Bob) -->
 <div id="solve-timer">
   <span class="timer-status" id="timer-status">Waiting...</span>
-  <div class="timer-progress"><div class="timer-fill" id="timer-fill"></div></div>
+  <div class="timer-bars">
+    <div class="timer-bar-row">
+      <span class="label alice">Alice</span>
+      <div class="timer-progress"><div class="timer-fill alice" id="alice-fill"></div></div>
+      <span class="pct" id="alice-pct">0%</span>
+    </div>
+    <div class="timer-bar-row">
+      <span class="label bob">Bob</span>
+      <div class="timer-progress"><div class="timer-fill bob" id="bob-fill"></div></div>
+      <span class="pct" id="bob-pct">0%</span>
+    </div>
+  </div>
   <span class="timer-text" id="timer-remaining">--:--</span>
   <span style="color: var(--text-dim);">remaining</span>
 </div>
@@ -668,7 +734,7 @@
 <!-- ============================================================ -->
 <!-- SLIDE 6: Time-Lock Puzzles Concept -->
 <!-- ============================================================ -->
-<div class="slide" id="slide-6">
+<div class="slide" id="slide-6" data-refs='<span class="ref-tag">[1]</span> Rivest, Shamir, Wagner (1996) — Time-Lock Puzzles and Timed-Release Crypto. MIT/LCS/TR-684.'>
   <h2>Time-Lock Puzzles (TLP)</h2>
   <p style="margin-bottom:20px;">Encapsulate a secret <span class="math">s</span> such that it remains hidden until time <span class="math">T</span> has elapsed.</p>
 
@@ -682,7 +748,7 @@
       </ul>
     </div>
     <div class="card card-green">
-      <h3>RSA-based TLP (Rivest, Shamir, Wagner 1996)</h3>
+      <h3>RSA-based TLP (Rivest, Shamir, Wagner 1996)<sup style="font-size: 14px; color: var(--accent2);">&nbsp;[1]</sup></h3>
       <div class="math-block" style="font-size: 0.95rem; text-align: left;">
         N = p · q &nbsp;&nbsp;(RSA modulus)<br>
         Puzzle: (N, T, x, x<sup>2<sup>T</sup></sup> · k, Enc(k, s))<br><br>
@@ -826,7 +892,7 @@
 <!-- ============================================================ -->
 <!-- SLIDE 11: Flavors of Homomorphic Encryption -->
 <!-- ============================================================ -->
-<div class="slide" id="slide-11">
+<div class="slide" id="slide-11" data-refs='<span class="ref-tag">[2]</span> Malavolta &amp; Thyagarajan (2019) — Homomorphic Time-Lock Puzzles &amp; Applications. <span class="ref-divider">·</span> <span class="ref-tag">[3]</span> Gentry (2009) — A Fully Homomorphic Encryption Scheme. PhD thesis, Stanford.'>
   <h2>Flavors of Homomorphism</h2>
   <div class="three-col" style="margin-top: 10px;">
     <div class="card card-accent">
@@ -848,13 +914,13 @@
       <p class="small" style="color: var(--accent2);">Efficient RSA-based construction.</p>
     </div>
     <div class="card card-red">
-      <span class="tag tag-red">Fully Homomorphic</span>
+      <span class="tag tag-red">Fully Homomorphic<sup style="font-size: 14px; color: var(--accent3);">&nbsp;[3]</sup></span>
       <p style="font-size: 1.05rem; margin-top: 10px;">Supports <span class="highlight3">any function</span> (NAND gates).</p>
       <div class="math-block" style="font-size: 0.95rem;">
         Eval(C, Enc(a), Enc(b))<br>= Enc(C(a, b))
       </div>
       <p class="small" style="margin-top:10px;">Needed for sealed-bid auctions.</p>
-      <p class="small" style="color: var(--accent3);">Requires obfuscation → theoretical.</p>
+      <p class="small" style="color: var(--accent3);">Requires obfuscation → theoretical<sup style="color: var(--accent3);">&nbsp;[2]</sup>.</p>
     </div>
   </div>
 </div>
@@ -1186,17 +1252,17 @@
   <div class="three-col">
     <div class="card card-accent">
       <span class="emoji">🔒</span>
-      <h3 style="color: var(--accent);">Ballot Secrecy</h3>
+      <h3 style="color: var(--accent); text-align: center;">Ballot Secrecy</h3>
       <p>Individual votes are hidden inside time-lock puzzles. The LHTLP security guarantees no one can decrypt before time T.</p>
     </div>
     <div class="card card-green">
       <span class="emoji">⚖</span>
-      <h3>No Bias</h3>
+      <h3 style="text-align: center;">No Bias</h3>
       <p>Votes are committed before counting starts. The time-lock prevents anyone from peeking at partial results during the voting phase.</p>
     </div>
     <div class="card card-red">
       <span class="emoji">🛡</span>
-      <h3 style="color: var(--accent3);">DoS Resilient</h3>
+      <h3 style="color: var(--accent3); text-align: center;">DoS Resilient</h3>
       <p>If voters go offline, their votes can still be counted via puzzle solving. No need for the voter's cooperation in the counting phase.</p>
     </div>
   </div>
@@ -1210,7 +1276,7 @@
 <!-- ============================================================ -->
 <!-- SLIDE 23: Beyond LHTLP & Recent Advances -->
 <!-- ============================================================ -->
-<div class="slide" id="slide-23">
+<div class="slide" id="slide-23" data-refs='<span class="ref-tag">[4]</span> Brakerski, Döttling, Garg, Malavolta (2019) — Leveraging Linear Decryption: Rate-1 FHE &amp; Time-Lock Puzzles. TCC &#39;19.'>
   <h2>Beyond LHTLP: Limitations &amp; Recent Advances</h2>
 
   <div class="two-col">
@@ -1228,7 +1294,7 @@
 
     <div class="card card-green">
       <span class="tag tag-green">Recent Advances (2025)</span>
-      <h3>Lattice-Based Time-Lock Puzzles</h3>
+      <h3>Lattice-Based Time-Lock Puzzles<sup style="font-size: 14px; color: var(--accent2);">&nbsp;[4]</sup></h3>
       <ul>
         <li><span class="highlight2">Post-quantum security:</span> survives a future quantum adversary</li>
         <li><span class="highlight2">No RSA / factoring assumption:</span> based on Learning With Errors (LWE)</li>
@@ -1319,7 +1385,7 @@
 <!-- ============================================================ -->
 <!-- SLIDE 27: Reviewer Q&A — five representative Q&A pairs -->
 <!-- ============================================================ -->
-<div class="slide" id="slide-27">
+<div class="slide" id="slide-27" data-refs='<span class="ref-tag">[4]</span> Brakerski, Döttling, Garg, Malavolta (2019) — Leveraging Linear Decryption: Rate-1 FHE &amp; Time-Lock Puzzles. TCC &#39;19.'>
   <h2 style="margin-bottom: 18px;">Your Questions and Our Answers</h2>
 
   <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -1346,10 +1412,57 @@
 
     <div class="card card-green" style="padding: 18px 24px;">
       <p style="font-size: 22px;"><span class="highlight2" style="font-weight: 700;">Q5.</span> Can fully homomorphic HTLP be built without indistinguishability obfuscation?</p>
-      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Not yet. Witness encryption and multilinear maps did not pan out; <span class="highlight2">lattice-based HTLPs (2024–25)</span> are the most promising path toward bounded-depth, post-quantum FHTLP.</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Partially. <span class="highlight2">Brakerski–Döttling–Garg–Malavolta (TCC '19)</span><sup style="color: var(--accent2);">&nbsp;[4]</sup> obtain homomorphic TLPs from rate-1 FHE under LWE, sidestepping iO. Fully compact FHTLP without iO and lattice-based HTLPs (2024–25) remain the active frontier.</p>
     </div>
 
   </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 28: References -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-28">
+  <h2 style="margin-bottom: 28px;">References</h2>
+
+  <ol style="list-style: none; padding-left: 0; margin: 0; counter-reset: ref;">
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[1]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Rivest, R. L., Shamir, A., &amp; Wagner, D. A. (1996). <em>Time-Lock Puzzles and Timed-Release Crypto.</em> Technical report MIT/LCS/TR-684.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">people.csail.mit.edu/rivest/pubs/RSW96.pdf</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slide 6</span>
+    </li>
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[2]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Malavolta, G., &amp; Thyagarajan, S. A. K. (2019). <em>Homomorphic Time-Lock Puzzles and Applications.</em> CRYPTO 2019 / IACR ePrint 2019/635.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">eprint.iacr.org/2019/635</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slide 11</span>
+    </li>
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[3]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Gentry, C. (2009). <em>A Fully Homomorphic Encryption Scheme.</em> PhD thesis, Stanford University.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">crypto.stanford.edu/craig/craig-thesis.pdf</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slide 11</span>
+    </li>
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[4]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Brakerski, Z., Döttling, N., Garg, S., &amp; Malavolta, G. (2019). <em>Leveraging Linear Decryption: Rate-1 Fully-Homomorphic Encryption and Time-Lock Puzzles.</em> TCC 2019.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">dl.acm.org/doi/10.1007/978-3-030-36033-7_16</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slides 23, 27</span>
+    </li>
+
+  </ol>
 </div>
 
 </div><!-- end #slide-container -->
@@ -1383,11 +1496,22 @@
   let current = 0;
   const total = slides.length;
 
+  const refFooter = document.getElementById('ref-footer');
+
   function updateSlide() {
     slides.forEach(s => s.classList.remove('active'));
     slides[current].classList.add('active');
     document.getElementById('counter').textContent = `${current + 1} / ${total}`;
     document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+
+    const refs = slides[current].dataset.refs;
+    if (refs) {
+      refFooter.innerHTML = refs;
+      refFooter.classList.add('visible');
+    } else {
+      refFooter.classList.remove('visible');
+      refFooter.innerHTML = '';
+    }
   }
 
   function next() { if (current < total - 1) { current++; updateSlide(); } }
@@ -1427,10 +1551,39 @@
   let solveStartTime = null;
   let serverReachable = false;
 
+  // Smooth-countdown state: server tells us the true remaining time on each
+  // /status poll; between polls we decrement locally so the digits don't jump.
+  let serverRemaining = null;     // seconds, last value the server sent
+  let serverRemainingAt = 0;      // ms (Date.now()) when we received it
+  let isSolvingNow = false;
+  let hasResults = false;
+
   function formatTime(seconds) {
+    seconds = Math.max(0, seconds);
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function tickRemaining() {
+    const el = document.getElementById('timer-remaining');
+    if (!el) return;
+    if (hasResults) { el.textContent = '0:00'; return; }
+    if (!isSolvingNow || serverRemaining === null) return;
+    const elapsed = (Date.now() - serverRemainingAt) / 1000;
+    el.textContent = formatTime(serverRemaining - elapsed);
+  }
+  setInterval(tickRemaining, 250);
+
+  function setBars(alicePct, bobPct) {
+    const af = document.getElementById('alice-fill');
+    const bf = document.getElementById('bob-fill');
+    const ap = document.getElementById('alice-pct');
+    const bp = document.getElementById('bob-pct');
+    if (af) af.style.width = alicePct + '%';
+    if (bf) bf.style.width = bobPct + '%';
+    if (ap) ap.textContent = Math.round(alicePct) + '%';
+    if (bp) bp.textContent = Math.round(bobPct) + '%';
   }
 
   function pollServer() {
@@ -1445,23 +1598,25 @@
 
         const timer = document.getElementById('solve-timer');
         const pct = data.progress || 0;
+        const alicePct = data.alice_progress || 0;
+        const bobPct = data.bob_progress || 0;
+
+        // Cache state for the local countdown ticker.
+        isSolvingNow = !!data.solving;
+        hasResults = !!data.results;
+        if (typeof data.remaining_seconds === 'number') {
+          serverRemaining = data.remaining_seconds;
+          serverRemainingAt = Date.now();
+        }
 
         if (data.solving) {
           // Show timer bar
           timer.classList.add('visible');
           document.getElementById('timer-status').textContent = data.message || 'Solving...';
-          document.getElementById('timer-fill').style.width = pct + '%';
+          setBars(alicePct, bobPct);
+          tickRemaining(); // refresh immediately so the display matches the new poll
 
-          // Estimate remaining time
-          if (!solveStartTime && pct > 0) solveStartTime = Date.now();
-          if (solveStartTime && pct > 0) {
-            const elapsed = (Date.now() - solveStartTime) / 1000;
-            const estTotal = elapsed / (pct / 100);
-            const remaining = Math.max(0, estTotal - elapsed);
-            document.getElementById('timer-remaining').textContent = formatTime(remaining);
-          }
-
-          // Update results progress bar
+          // Update results progress bar on slide 24
           const rpb = document.getElementById('results-progress-bar');
           if (rpb) rpb.style.width = pct + '%';
           const rsm = document.getElementById('results-status-msg');
@@ -1471,7 +1626,7 @@
           // Solving complete — show results
           timer.classList.add('visible');
           document.getElementById('timer-status').textContent = 'Tally complete!';
-          document.getElementById('timer-fill').style.width = '100%';
+          setBars(100, 100);
           document.getElementById('timer-remaining').textContent = '0:00';
 
           // Populate results
@@ -1491,7 +1646,7 @@
           if (data.votes > 0) {
             timer.classList.add('visible');
             document.getElementById('timer-status').textContent = data.votes + ' votes encrypted';
-            document.getElementById('timer-fill').style.width = '0%';
+            setBars(0, 0);
             document.getElementById('timer-remaining').textContent = '--:--';
           } else {
             timer.classList.remove('visible');
