@@ -508,8 +508,8 @@
     text-align: right;
     font-weight: 600;
   }
-  #solve-timer .timer-bar-row .label.alice { color: var(--accent3); }
-  #solve-timer .timer-bar-row .label.bob   { color: var(--accent); }
+  #solve-timer .timer-bar-row .label.codex { color: var(--accent3); }
+  #solve-timer .timer-bar-row .label.claude   { color: var(--accent); }
   #solve-timer .timer-progress {
     width: 280px;
     height: 8px;
@@ -522,8 +522,8 @@
     transition: width 0.6s ease;
     width: 0%;
   }
-  #solve-timer .timer-fill.alice { background: var(--accent3); }
-  #solve-timer .timer-fill.bob   { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  #solve-timer .timer-fill.codex { background: var(--accent3); }
+  #solve-timer .timer-fill.claude   { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
   #solve-timer .timer-bar-row .pct {
     width: 42px;
     color: var(--text-dim);
@@ -602,8 +602,8 @@
     transition: width 0.8s ease;
     border-radius: 8px;
   }
-  .results-panel .result-fill.alice { background: var(--accent3); }
-  .results-panel .result-fill.bob { background: var(--accent); }
+  .results-panel .result-fill.codex { background: var(--accent3); }
+  .results-panel .result-fill.claude { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -615,19 +615,19 @@
 <!-- Per-slide reference footer (populated by updateSlide from data-refs) -->
 <div id="ref-footer" class="ref-footer"></div>
 
-<!-- Always-visible solve timer (two stacked bars: Alice + Bob) -->
+<!-- Always-visible solve timer (two stacked bars: Codex + Claude) -->
 <div id="solve-timer">
   <span class="timer-status" id="timer-status">Waiting...</span>
   <div class="timer-bars">
     <div class="timer-bar-row">
-      <span class="label alice">Alice</span>
-      <div class="timer-progress"><div class="timer-fill alice" id="alice-fill"></div></div>
-      <span class="pct" id="alice-pct">0%</span>
+      <span class="label codex">Codex</span>
+      <div class="timer-progress"><div class="timer-fill codex" id="codex-fill"></div></div>
+      <span class="pct" id="codex-pct">0%</span>
     </div>
     <div class="timer-bar-row">
-      <span class="label bob">Bob</span>
-      <div class="timer-progress"><div class="timer-fill bob" id="bob-fill"></div></div>
-      <span class="pct" id="bob-pct">0%</span>
+      <span class="label claude">Claude</span>
+      <div class="timer-progress"><div class="timer-fill claude" id="claude-fill"></div></div>
+      <span class="pct" id="claude-pct">0%</span>
     </div>
   </div>
   <span class="timer-text" id="timer-remaining">--:--</span>
@@ -679,7 +679,7 @@
 <!-- ============================================================ -->
 <div class="slide demo-banner" id="slide-3">
   <h1>Time to Vote!</h1>
-  <p class="subtitle" style="color: var(--text); margin-bottom: 20px;">Scan the QR code and vote for <span class="highlight3">Alice</span> or <span class="highlight">Bob</span>.</p>
+  <p class="subtitle" style="color: var(--text); margin-bottom: 20px;">Scan the QR code and vote for <span class="highlight3">Codex</span> or <span class="highlight">Claude</span>.</p>
   <div class="card" style="display: inline-flex; align-items: center; justify-content: center; gap: 50px; padding: 28px 36px; margin: 0 auto;">
     <div style="background: white; padding: 16px; border-radius: 14px; display: inline-block; border: 1px solid var(--border);">
       <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Fmarley-choleric-leigh.ngrok-free.dev&bgcolor=ffffff&color=000000" alt="QR Code" width="220" height="220">
@@ -1093,10 +1093,10 @@
   </div>
 
   <div class="example-box" style="margin-top: 22px;">
-    <p class="example-label">Voting example: N = 7, 3 voters, 2 vote Alice (s = 1)</p>
+    <p class="example-label">Voting example: N = 7, 3 voters, 2 vote Codex (s = 1)</p>
     <p class="example-question">v₁ = (1+7)¹ = 8, &nbsp; v₂ = 8, &nbsp; v₃ = (1+7)⁰ = 1 &nbsp;→&nbsp; Product mod 49 = ?</p>
     <button class="reveal-btn" onclick="event.stopPropagation(); this.parentElement.querySelector('.example-answer').classList.toggle('show')">Reveal</button>
-    <p class="example-answer">8 × 8 × 1 = 64 mod 49 = <b>15</b> &nbsp;→&nbsp; Decode: (15 − 1) / 7 = <span style="color: var(--accent2); font-weight: 700;">2 votes for Alice ✓</span></p>
+    <p class="example-answer">8 × 8 × 1 = 64 mod 49 = <b>15</b> &nbsp;→&nbsp; Decode: (15 − 1) / 7 = <span style="color: var(--accent2); font-weight: 700;">2 votes for Codex ✓</span></p>
   </div>
 </div>
 
@@ -1227,7 +1227,7 @@
       <span class="arrow">→</span>
       <div class="flow-step">Broadcast ballot</div>
     </div>
-    <p class="small" style="margin-top: 12px; text-align: center;">Example (2 candidates): Vote Alice = <span class="math">(PGen(1), PGen(0))</span> &nbsp;&nbsp; Vote Bob = <span class="math">(PGen(0), PGen(1))</span></p>
+    <p class="small" style="margin-top: 12px; text-align: center;">Example (2 candidates): Vote Codex = <span class="math">(PGen(1), PGen(0))</span> &nbsp;&nbsp; Vote Claude = <span class="math">(PGen(0), PGen(1))</span></p>
   </div>
 
   <div class="card card-green">
@@ -1326,14 +1326,14 @@
   <div id="results-final" style="display: none;">
     <div class="results-panel">
       <div class="result-row">
-        <span class="highlight3" style="width: 100px; text-align: right;">Alice</span>
-        <div class="result-bar"><div class="result-fill alice" id="bar-alice" style="width: 0%;"></div></div>
-        <span class="highlight3" id="count-alice" style="width: 60px;">0</span>
+        <span class="highlight3" style="width: 100px; text-align: right;">Codex</span>
+        <div class="result-bar"><div class="result-fill codex" id="bar-codex" style="width: 0%;"></div></div>
+        <span class="highlight3" id="count-codex" style="width: 60px;">0</span>
       </div>
       <div class="result-row">
-        <span class="highlight" style="width: 100px; text-align: right;">Bob</span>
-        <div class="result-bar"><div class="result-fill bob" id="bar-bob" style="width: 0%;"></div></div>
-        <span class="highlight" id="count-bob" style="width: 60px;">0</span>
+        <span class="highlight" style="width: 100px; text-align: right;">Claude</span>
+        <div class="result-bar"><div class="result-fill claude" id="bar-claude" style="width: 0%;"></div></div>
+        <span class="highlight" id="count-claude" style="width: 60px;">0</span>
       </div>
     </div>
     <p style="margin-top: 30px; font-size: 22px; color: var(--accent);">
@@ -1575,15 +1575,15 @@
   }
   setInterval(tickRemaining, 250);
 
-  function setBars(alicePct, bobPct) {
-    const af = document.getElementById('alice-fill');
-    const bf = document.getElementById('bob-fill');
-    const ap = document.getElementById('alice-pct');
-    const bp = document.getElementById('bob-pct');
-    if (af) af.style.width = alicePct + '%';
-    if (bf) bf.style.width = bobPct + '%';
-    if (ap) ap.textContent = Math.round(alicePct) + '%';
-    if (bp) bp.textContent = Math.round(bobPct) + '%';
+  function setBars(codexPct, claudePct) {
+    const af = document.getElementById('codex-fill');
+    const bf = document.getElementById('claude-fill');
+    const ap = document.getElementById('codex-pct');
+    const bp = document.getElementById('claude-pct');
+    if (af) af.style.width = codexPct + '%';
+    if (bf) bf.style.width = claudePct + '%';
+    if (ap) ap.textContent = Math.round(codexPct) + '%';
+    if (bp) bp.textContent = Math.round(claudePct) + '%';
   }
 
   function pollServer() {
@@ -1598,8 +1598,8 @@
 
         const timer = document.getElementById('solve-timer');
         const pct = data.progress || 0;
-        const alicePct = data.alice_progress || 0;
-        const bobPct = data.bob_progress || 0;
+        const codexPct = data.codex_progress || 0;
+        const claudePct = data.claude_progress || 0;
 
         // Cache state for the local countdown ticker.
         isSolvingNow = !!data.solving;
@@ -1613,7 +1613,7 @@
           // Show timer bar
           timer.classList.add('visible');
           document.getElementById('timer-status').textContent = data.message || 'Solving...';
-          setBars(alicePct, bobPct);
+          setBars(codexPct, claudePct);
           tickRemaining(); // refresh immediately so the display matches the new poll
 
           // Update results progress bar on slide 24
@@ -1630,16 +1630,16 @@
           document.getElementById('timer-remaining').textContent = '0:00';
 
           // Populate results
-          const alice = data.results.Alice || 0;
-          const bob = data.results.Bob || 0;
-          const maxVotes = Math.max(alice, bob, 1);
+          const codex = data.results.Codex || 0;
+          const claude = data.results.Claude || 0;
+          const maxVotes = Math.max(codex, claude, 1);
 
           document.getElementById('results-waiting').style.display = 'none';
           document.getElementById('results-final').style.display = 'block';
-          document.getElementById('count-alice').textContent = alice;
-          document.getElementById('count-bob').textContent = bob;
-          document.getElementById('bar-alice').style.width = (alice / maxVotes * 100) + '%';
-          document.getElementById('bar-bob').style.width = (bob / maxVotes * 100) + '%';
+          document.getElementById('count-codex').textContent = codex;
+          document.getElementById('count-claude').textContent = claude;
+          document.getElementById('bar-codex').style.width = (codex / maxVotes * 100) + '%';
+          document.getElementById('bar-claude').style.width = (claude / maxVotes * 100) + '%';
 
         } else {
           // Not solving yet — show vote count on timer if votes exist

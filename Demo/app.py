@@ -89,8 +89,8 @@ def prompt_target_minutes():
     print("=" * 60)
     print(" HTLP Demo - tally duration configuration")
     print("=" * 60)
-    print(" Total time the audience waits while both Alice's and")
-    print(" Bob's puzzles are solved. Each puzzle gets half of this.")
+    print(" Total time the audience waits while both Codex's and")
+    print(" Claude's puzzles are solved. Each puzzle gets half of this.")
     while True:
         raw = input(" Total tally time in MINUTES [default 5]: ").strip()
         if not raw:
@@ -128,7 +128,7 @@ votes = []
 is_solving = False
 results = None
 progress_msg = "Waiting for votes..."
-solve_progress = {"Alice": 0, "Bob": 0}  # per-candidate squaring counter
+solve_progress = {"Codex": 0, "Claude": 0}  # per-candidate squaring counter
 
 # --- Routes ---
 @app.route('/')
@@ -141,9 +141,9 @@ def cast_vote():
         return jsonify({"status": "error", "message": "Voting is closed!"}), 400
     
     candidate = request.form.get('candidate')
-    if candidate == 'Alice':
+    if candidate == 'Codex':
         vote_vector = (htlp.PGen(1), htlp.PGen(0))
-    elif candidate == 'Bob':
+    elif candidate == 'Claude':
         vote_vector = (htlp.PGen(0), htlp.PGen(1))
     else:
         return jsonify({"status": "error"}), 400
@@ -161,8 +161,8 @@ def start_tally():
     if not is_solving and votes:
         is_solving = True
         htlp.current_iteration = 0
-        solve_progress["Alice"] = 0
-        solve_progress["Bob"] = 0
+        solve_progress["Codex"] = 0
+        solve_progress["Claude"] = 0
         progress_msg = "Homomorphically adding puzzles..."
         threading.Thread(target=run_tally).start()
     return jsonify({"status": "started"})
@@ -170,21 +170,21 @@ def start_tally():
 @app.route('/status')
 def status():
     if results:
-        alice_pct = 100.0
-        bob_pct = 100.0
+        codex_pct = 100.0
+        claude_pct = 100.0
         remaining_seconds = 0.0
     elif is_solving and htlp.T:
-        alice_frac = min(1.0, solve_progress["Alice"] / htlp.T)
-        bob_frac = min(1.0, solve_progress["Bob"] / htlp.T)
-        alice_pct = alice_frac * 100.0
-        bob_pct = bob_frac * 100.0
-        remaining_seconds = ((1.0 - alice_frac) + (1.0 - bob_frac)) * target_per_puzzle
+        codex_frac = min(1.0, solve_progress["Codex"] / htlp.T)
+        claude_frac = min(1.0, solve_progress["Claude"] / htlp.T)
+        codex_pct = codex_frac * 100.0
+        claude_pct = claude_frac * 100.0
+        remaining_seconds = ((1.0 - codex_frac) + (1.0 - claude_frac)) * target_per_puzzle
     else:
-        alice_pct = 0.0
-        bob_pct = 0.0
+        codex_pct = 0.0
+        claude_pct = 0.0
         remaining_seconds = float(target_total_seconds)
 
-    combined = (alice_pct + bob_pct) / 2.0
+    combined = (codex_pct + claude_pct) / 2.0
 
     return jsonify({
         "solving": is_solving,
@@ -192,8 +192,8 @@ def status():
         "votes": len(votes),
         "message": progress_msg,
         "progress": round(combined, 2),
-        "alice_progress": round(alice_pct, 2),
-        "bob_progress": round(bob_pct, 2),
+        "codex_progress": round(codex_pct, 2),
+        "claude_progress": round(claude_pct, 2),
         "target_per_puzzle": target_per_puzzle,
         "target_total": target_total_seconds,
         "remaining_seconds": round(remaining_seconds, 2),
@@ -202,22 +202,22 @@ def status():
 def run_tally():
     global results, is_solving, progress_msg
 
-    alice_eval = htlp.PEval([v[0] for v in votes])
-    bob_eval = htlp.PEval([v[1] for v in votes])
+    codex_eval = htlp.PEval([v[0] for v in votes])
+    claude_eval = htlp.PEval([v[1] for v in votes])
 
-    progress_msg = f"Solving time-lock for Alice ({per_puzzle_label})..."
-    alice_total = htlp.PSolve(
-        alice_eval,
-        progress_cb=lambda n: solve_progress.update({"Alice": n}),
+    progress_msg = f"Solving time-lock for Codex ({per_puzzle_label})..."
+    codex_total = htlp.PSolve(
+        codex_eval,
+        progress_cb=lambda n: solve_progress.update({"Codex": n}),
     )
 
-    progress_msg = f"Solving time-lock for Bob ({per_puzzle_label})..."
-    bob_total = htlp.PSolve(
-        bob_eval,
-        progress_cb=lambda n: solve_progress.update({"Bob": n}),
+    progress_msg = f"Solving time-lock for Claude ({per_puzzle_label})..."
+    claude_total = htlp.PSolve(
+        claude_eval,
+        progress_cb=lambda n: solve_progress.update({"Claude": n}),
     )
 
-    results = {"Alice": alice_total, "Bob": bob_total}
+    results = {"Codex": codex_total, "Claude": claude_total}
     progress_msg = "Tally complete!"
     is_solving = False
 

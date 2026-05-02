@@ -44,14 +44,15 @@
                 // NEW: Update the progress bar width and text
                 if (data.solving || data.results) {
                     document.getElementById('progress-container').style.display = 'block';
+                    const pctRounded = Math.round(data.progress);
                     document.getElementById('progress-bar').style.width = data.progress + "%";
-                    document.getElementById('progress-bar').innerText = data.progress + "%";
+                    document.getElementById('progress-bar').innerText = pctRounded + "%";
                 }
                 
                 if(data.results) {
                     document.getElementById('results').innerHTML = 
-                        `<p>🎉 Alice: ${data.results.Alice} votes</p>
-                         <p>🎉 Bob: ${data.results.Bob} votes</p>`;
+                        `<p>🎉 Codex: ${data.results.Codex} votes</p>
+                         <p>🎉 Claude: ${data.results.Claude} votes</p>`;
                 }
             });
         }

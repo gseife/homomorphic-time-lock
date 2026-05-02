@@ -100,21 +100,21 @@
     button.candidate-btn:active { transform: translateY(0); }
     button.candidate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    button.alice {
+    button.codex {
       color: var(--accent3);
       border-color: var(--accent3);
     }
-    button.alice:hover:not(:disabled) {
+    button.codex:hover:not(:disabled) {
       background: rgba(212, 121, 95, 0.12);
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(212, 121, 95, 0.25);
     }
 
-    button.bob {
+    button.claude {
       color: var(--accent);
       border-color: var(--accent);
     }
-    button.bob:hover:not(:disabled) {
+    button.claude:hover:not(:disabled) {
       background: rgba(74, 122, 140, 0.12);
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(74, 122, 140, 0.25);
@@ -191,8 +191,8 @@
       font-size: 16px;
       text-transform: uppercase;
     }
-    .voted-for.alice { background: rgba(212, 121, 95, 0.18); color: var(--accent3); }
-    .voted-for.bob { background: rgba(74, 122, 140, 0.18); color: var(--accent); }
+    .voted-for.codex { background: rgba(212, 121, 95, 0.18); color: var(--accent3); }
+    .voted-for.claude { background: rgba(74, 122, 140, 0.18); color: var(--accent); }
 
     .puzzle-pill {
       display: inline-block;
@@ -251,8 +251,8 @@
       <div id="voting-booth">
         <p class="prompt">Choose your candidate</p>
         <div class="candidate-buttons">
-          <button class="candidate-btn alice" onclick="vote('Alice')">Vote Alice</button>
-          <button class="candidate-btn bob" onclick="vote('Bob')">Vote Bob</button>
+          <button class="candidate-btn codex" onclick="vote('Codex')">Vote Codex</button>
+          <button class="candidate-btn claude" onclick="vote('Claude')">Vote Claude</button>
         </div>
         <p class="info">No one, not even the server,<br>can see your individual vote.</p>
       </div>
@@ -316,7 +316,7 @@
             pill.style.display = 'inline-block';
 
             const puzzle = document.getElementById('puzzle-pill');
-            puzzle.textContent = 'Ballot #' + data.total_votes + ' → LHTLP puzzle pair';
+            puzzle.textContent = 'Ballot #' + data.total_votes;
             puzzle.style.display = 'inline-block';
 
             document.getElementById('live-count').textContent = data.total_votes;
