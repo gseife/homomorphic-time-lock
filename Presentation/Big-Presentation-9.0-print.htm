@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homomorphic Time-Lock Puzzles and Applications</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #faf6ed;
+    --bg-card: #ffffff;
+    --accent: #4a7a8c;
+    --accent2: #5fa18f;
+    --accent3: #d4795f;
+    --accent-soft: #b8a8d4;
+    --text: #1d2538;
+    --text-dim: #6b7280;
+    --border: #e7e0cf;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: 24px; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background:
+      radial-gradient(circle at 92% 8%, rgba(244, 200, 184, 0.55) 0%, rgba(244, 200, 184, 0) 32%),
+      radial-gradient(circle at 4% 38%, rgba(200, 230, 221, 0.55) 0%, rgba(200, 230, 221, 0) 28%),
+      radial-gradient(circle at 78% 92%, rgba(247, 224, 178, 0.5) 0%, rgba(247, 224, 178, 0) 30%),
+      radial-gradient(circle at 22% 96%, rgba(214, 200, 232, 0.45) 0%, rgba(214, 200, 232, 0) 28%),
+      var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Fixed 16:9 canvas that scales to fit the viewport */
+  #slide-container {
+    width: 1920px;
+    height: 1080px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+  }
+
+  .slide {
+    display: none;
+    width: 1920px;
+    height: 1080px;
+    padding: 50px 80px;
+    flex-direction: column;
+    justify-content: center;
+    position: absolute;
+    top: 0; left: 0;
+    overflow: hidden;
+  }
+
+  .slide.active { display: flex; }
+
+  /* Slide counter */
+  .slide-counter {
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    font-size: 16px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    z-index: 250;
+    transition: bottom 0.3s ease;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  /* Navigation hints */
+  .nav-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 30px;
+    font-size: 14px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 250;
+    transition: bottom 0.3s ease;
+  }
+
+  /* Viewport-fixed reference footer (driven by data-refs on each slide).
+     Styled to match .slide-counter: same font, size, color, no accents. */
+  .ref-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 84px;
+    padding: 0 220px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.5;
+    z-index: 220;
+    display: none;
+    pointer-events: none;
+    transition: bottom 0.3s ease;
+  }
+  .ref-footer.visible { display: block; }
+  .ref-footer .ref-tag { color: var(--text-dim); font-weight: 400; }
+  .ref-footer .ref-divider { color: var(--text-dim); margin: 0 10px; }
+
+  /* ===== PRINT-TO-PDF OVERRIDES ===== */
+  @page { size: 1920px 1080px; margin: 0; }
+  @media print {
+    html, body {
+      width: 1920px;
+      height: auto;
+      overflow: visible !important;
+      background: var(--bg);
+    }
+    .progress-bar,
+    .slide-counter,
+    .nav-hint,
+    #solve-timer,
+    #ref-footer { display: none !important; }
+    #slide-container {
+      position: static !important;
+      width: 1920px !important;
+      height: auto !important;
+      top: auto !important;
+      left: auto !important;
+      transform: none !important;
+    }
+    .slide {
+      display: flex !important;
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      width: 1920px !important;
+      height: 1080px !important;
+      overflow: hidden !important;
+      page-break-after: always !important;
+      break-after: page !important;
+    }
+    .slide:last-child {
+      page-break-after: auto !important;
+      break-after: auto !important;
+    }
+  }
+
+  /* Counter / nav-hint placement:
+       - default                       : 20 px
+       - solve-timer visible           : 60 px (clears 48 px timer)
+       - ref-footer visible            : 84 px (clears refs + any timer) */
+  body:has(#solve-timer.visible) .slide-counter,
+  body:has(#solve-timer.visible) .nav-hint {
+    bottom: 88px;
+  }
+  body:has(.ref-footer.visible) .slide-counter,
+  body:has(.ref-footer.visible) .nav-hint {
+    bottom: 112px;
+  }
+
+  h1 {
+    font-size: 52px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 42px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--accent);
+  }
+
+  h3 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--accent2);
+  }
+
+  p, li {
+    font-size: 26px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  ul { list-style: none; padding-left: 0; }
+
+  ul li {
+    padding: 6px 0 6px 30px;
+    position: relative;
+  }
+
+  ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 17px;
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    background: var(--accent);
+    opacity: 0.8;
+  }
+
+  .highlight { color: var(--accent); font-weight: 600; }
+  .highlight2 { color: var(--accent2); font-weight: 600; }
+  .highlight3 { color: var(--accent3); font-weight: 600; }
+
+  .subtitle {
+    font-size: 28px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 300;
+  }
+
+  .code-block {
+    background: #ebe4d1;
+    border: 1px solid #d4cdb8;
+    border-radius: 10px;
+    padding: 20px 26px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 21px;
+    line-height: 1.5;
+    margin: 14px 0;
+    overflow-x: auto;
+    color: #1d2538;
+    white-space: pre-wrap;
+  }
+
+  .math {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(74, 122, 140, 0.18);
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 24px;
+    color: var(--accent);
+    display: inline-block;
+    border: 1px solid rgba(74, 122, 140, 0.32);
+  }
+
+  .math-block {
+    font-family: 'JetBrains Mono', monospace;
+    background: #e6eef2;
+    padding: 16px 28px;
+    border-radius: 10px;
+    font-size: 24px;
+    color: var(--accent);
+    margin: 14px 0;
+    text-align: center;
+    border: 1px solid #b8ccd4;
+    line-height: 1.8;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: stretch;
+    margin-top: 10px;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+    align-items: stretch;
+    margin-top: 10px;
+  }
+
+  /* Paired-box layout: cards stretch to equal height, body text centered, titles/lists stay left */
+  .two-col > .card,
+  .three-col > .card {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+  }
+  .two-col > .card > h1,
+  .two-col > .card > h2,
+  .two-col > .card > h3,
+  .two-col > .card > ul,
+  .three-col > .card > h1,
+  .three-col > .card > h2,
+  .three-col > .card > h3,
+  .three-col > .card > ul {
+    text-align: left;
+  }
+  .two-col > .card > .tag,
+  .three-col > .card > .tag {
+    align-self: flex-start;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid #d4cdb8;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(29, 37, 56, 0.06), 0 6px 18px rgba(29, 37, 56, 0.07);
+  }
+
+  .card-accent {
+    border-left: 4px solid var(--accent);
+    background: #cfe0e7;
+    border-color: #8fb1bd;
+  }
+
+  .card-green {
+    border-left: 4px solid var(--accent2);
+    background: #cee2d7;
+    border-color: #8fbaa8;
+  }
+
+  .card-red {
+    border-left: 4px solid var(--accent3);
+    background: #f1cdb8;
+    border-color: #d49b80;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .tag-purple { background: rgba(74, 122, 140, 0.18); color: var(--accent); }
+  .tag-green { background: rgba(95, 161, 143, 0.22); color: var(--accent2); }
+  .tag-red { background: rgba(212, 121, 95, 0.2); color: var(--accent3); }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 18px 0;
+    flex-wrap: wrap;
+  }
+
+  .flow-step {
+    background: var(--bg-card);
+    border: 1px solid #d4cdb8;
+    padding: 14px 22px;
+    border-radius: 10px;
+    font-size: 21px;
+    text-align: center;
+    min-width: 140px;
+    box-shadow: 0 1px 2px rgba(29, 37, 56, 0.05), 0 4px 10px rgba(29, 37, 56, 0.05);
+  }
+
+  .flow-step.active-step {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(74, 122, 140, 0.25);
+  }
+
+  .arrow {
+    font-size: 32px;
+    color: var(--accent);
+  }
+
+  /* Title slide special styling */
+  .title-slide {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .title-slide h1 {
+    font-size: 64px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .title-slide .subtitle {
+    font-size: 32px;
+    margin-top: 10px;
+  }
+
+  .authors {
+    margin-top: 30px;
+    font-size: 26px;
+    color: var(--text-dim);
+  }
+
+  .section-title {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .section-title h2 {
+    font-size: 56px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .demo-banner {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .demo-banner h1 {
+    font-size: 56px;
+    color: var(--accent2);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .demo-banner .subtitle {
+    font-size: 30px;
+    margin-top: 15px;
+  }
+
+  .emoji { font-size: 42px; margin-bottom: 12px; display: block; }
+  .big-emoji { font-size: 68px; margin-bottom: 18px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 24px;
+  }
+
+  th {
+    background: #d4e3eb;
+    padding: 12px 22px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--accent);
+    border-bottom: 2px solid #a4becb;
+  }
+
+  td {
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  tr:hover td { background: rgba(74, 122, 140, 0.06); }
+
+  .small { font-size: 22px; color: var(--text-dim); }
+  .footnote {
+    font-size: 19px;
+    color: var(--text-dim);
+    margin-top: 14px;
+    font-style: italic;
+  }
+
+  .diagram-box {
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--accent);
+    display: inline-block;
+    min-width: 120px;
+  }
+
+  .diagram-box.green {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  .diagram-box.red {
+    border-color: var(--accent3);
+    color: var(--accent3);
+  }
+
+  .comparison-table td:first-child {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* QR code placeholder */
+  .qr-placeholder {
+    width: 200px;
+    height: 200px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 auto;
+  }
+
+  /* Always-visible solve timer bar (two stacked per-candidate bars) */
+  #solve-timer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 76px;
+    background: rgba(255, 252, 244, 0.96);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 10px rgba(29, 37, 56, 0.06);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    z-index: 200;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    padding: 0 30px;
+  }
+  #solve-timer.visible { display: flex; }
+  #solve-timer .timer-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  #solve-timer .timer-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  #solve-timer .timer-bar-row .label {
+    width: 48px;
+    text-align: right;
+    font-weight: 600;
+  }
+  #solve-timer .timer-bar-row .label.codex { color: var(--accent3); }
+  #solve-timer .timer-bar-row .label.claude   { color: var(--accent); }
+  #solve-timer .timer-progress {
+    width: 280px;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  #solve-timer .timer-fill {
+    height: 100%;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+  #solve-timer .timer-fill.codex { background: var(--accent3); }
+  #solve-timer .timer-fill.claude   { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  #solve-timer .timer-bar-row .pct {
+    width: 42px;
+    color: var(--text-dim);
+  }
+  #solve-timer .timer-text   { color: var(--accent2); font-weight: 600; }
+  #solve-timer .timer-status { color: var(--text); max-width: 240px; line-height: 1.3; }
+
+  /* Example reveal boxes */
+  .example-box {
+    background: #d0e2d8;
+    border: 1px dashed rgba(95, 161, 143, 0.7);
+    border-radius: 10px;
+    padding: 14px 22px;
+    margin-top: 14px;
+    box-shadow: 0 1px 2px rgba(29, 37, 56, 0.05), 0 4px 12px rgba(29, 37, 56, 0.05);
+  }
+  .example-box .example-label {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 6px;
+  }
+  .example-box .example-question {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    color: var(--text);
+  }
+  .example-box .example-answer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    color: var(--accent2);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(95, 161, 143, 0.24);
+    display: none;
+  }
+  .example-box .example-answer.show { display: block; }
+  .reveal-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 20px;
+    background: rgba(95, 161, 143, 0.18);
+    border: 1px solid var(--accent2);
+    border-radius: 6px;
+    color: var(--accent2);
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .reveal-btn:hover { background: rgba(95, 161, 143, 0.28); }
+
+  /* Live results panel */
+  .results-panel {
+    display: inline-block;
+    margin-top: 30px;
+    text-align: center;
+  }
+  .results-panel .result-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 12px 0;
+    font-size: 36px;
+    font-weight: 700;
+  }
+  .results-panel .result-bar {
+    width: 400px;
+    height: 40px;
+    background: var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .results-panel .result-fill {
+    height: 100%;
+    transition: width 0.8s ease;
+    border-radius: 8px;
+  }
+  .results-panel .result-fill.codex { background: var(--accent3); }
+  .results-panel .result-fill.claude { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress" style="width: 4%;"></div>
+<div class="slide-counter" id="counter">1 / 28</div>
+<div class="nav-hint">Arrow keys / Click to navigate</div>
+
+<!-- Per-slide reference footer (populated by updateSlide from data-refs) -->
+<div id="ref-footer" class="ref-footer"></div>
+
+<!-- Always-visible solve timer (two stacked bars: Codex + Claude) -->
+<div id="solve-timer">
+  <span class="timer-status" id="timer-status">Waiting...</span>
+  <div class="timer-bars">
+    <div class="timer-bar-row">
+      <span class="label codex">Codex</span>
+      <div class="timer-progress"><div class="timer-fill codex" id="codex-fill"></div></div>
+      <span class="pct" id="codex-pct">0%</span>
+    </div>
+    <div class="timer-bar-row">
+      <span class="label claude">Claude</span>
+      <div class="timer-progress"><div class="timer-fill claude" id="claude-fill"></div></div>
+      <span class="pct" id="claude-pct">0%</span>
+    </div>
+  </div>
+  <span class="timer-text" id="timer-remaining">--:--</span>
+  <span style="color: var(--text-dim);">remaining</span>
+</div>
+
+<div id="slide-container">
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================================ -->
+<div class="slide title-slide active" id="slide-1">
+  <h1>Homomorphic Time-Lock Puzzles<br>and Applications</h1>
+  <p class="subtitle">Malavolta &amp; Thyagarajan (2019) - Paper Presentation</p>
+  <p class="authors"> Secure & Private Computing: Foundations of Ethical Hacking <br> University of St. Gallen</p>
+  <p class="authors" style="margin-top: 20px; color: var(--accent);">Spring 2026</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: Agenda -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-2">
+  <h2>Agenda</h2>
+  <div class="two-col">
+    <div class="card card-accent">
+      <span class="tag tag-purple">Foundations</span>
+      <ul>
+        <li>Demo Initiation: Cast your votes!</li>
+        <li>Time-Lock Puzzles</li>
+        <li>Homomorphic Encryption</li>
+        <li>Homomorphic Time-Lock Puzzles</li>
+      </ul>
+    </div>
+    <div class="card card-green">
+      <span class="tag tag-green">Applications &amp; Wrap-up</span>
+      <ul>
+        <li>Application: Coin Flipping</li>
+        <li>Application: E-Voting</li>
+        <li>Beyond LHTLP &amp; Recent Advances</li>
+        <li>Live Demonstration: Results!</li>
+        <li>Summary &amp; Key Takeaways</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: Demo Initiation -->
+<!-- ============================================================ -->
+<div class="slide demo-banner" id="slide-3">
+  <h1>Time to Vote!</h1>
+  <p class="subtitle" style="color: var(--text); margin-bottom: 20px;">Scan the QR code and vote for <span class="highlight3">Codex</span> or <span class="highlight">Claude</span>.</p>
+  <div class="card" style="display: inline-flex; align-items: center; justify-content: center; gap: 50px; padding: 28px 36px; margin: 0 auto;">
+    <div style="background: white; padding: 16px; border-radius: 14px; display: inline-block; border: 1px solid var(--border);">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Fmarley-choleric-leigh.ngrok-free.dev&bgcolor=ffffff&color=000000" alt="QR Code" width="220" height="220">
+    </div>
+    <div style="text-align: left;">
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 22px; color: var(--accent2); margin-bottom: 12px;">marley-choleric-leigh.ngrok-free.dev</p>
+      <p style="font-size: 20px; color: var(--text-dim);">Your vote is immediately encrypted<br>into a time-lock puzzle.</p>
+      <p style="font-size: 20px; color: var(--text-dim); margin-top: 8px;">No one, not even the server<br>can see individual votes.</p>
+      <p style="margin-top: 16px; font-size: 22px; color: var(--text);">Votes cast: <span class="highlight2" id="vote-count-slide">0</span></p>
+    </div>
+  </div>
+  <p style="margin-top: 24px; font-size: 22px; color: var(--accent2);">While checking who won, let's learn how this works...</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: Motivation - Why do we need this? -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-4">
+  <h2>Motivation: The Problem</h2>
+  <p style="margin-bottom: 25px;">Consider <span class="highlight">e-voting without a trusted authority</span> (e.g., on a blockchain).</p>
+  <div class="two-col">
+    <div class="card card-red">
+      <span class="tag tag-red">Naive Approach: Commit-Reveal</span>
+      <ul>
+        <li>Voters <span class="highlight">commit</span> to their vote (Phase 1)</li>
+        <li>Voters <span class="highlight">reveal</span> their opening (Phase 2)</li>
+        <li style="color: var(--accent3);">What if voters go offline before revealing?</li>
+        <li style="color: var(--accent3);">Attacker can block openings to bias the result</li>
+      </ul>
+    </div>
+    <div class="card card-green">
+      <span class="tag tag-green">Solution: Time-Lock Puzzles</span>
+      <ul>
+        <li>Replace commitments with time-lock puzzles</li>
+        <li>Offline voters? Just <span class="highlight2">solve their puzzles</span></li>
+        <li>But: 100,000 missing votes = 100,000 puzzles to solve!</li>
+        <li style="color: var(--accent3);">Does not scale with many voters</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: Section - Time-Lock Puzzles (Concept 1) -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-5">
+  <p class="subtitle">Concept 1</p>
+  <h2>Time-Lock Puzzles</h2>
+  <p style="color: var(--text-dim); font-size: 1.2rem;">Encrypting messages for the future</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: Time-Lock Puzzles Concept -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-6" data-refs='<span class="ref-tag">[1]</span> Rivest, Shamir, Wagner (1996) — Time-Lock Puzzles and Timed-Release Crypto. MIT/LCS/TR-684.'>
+  <h2>Time-Lock Puzzles (TLP)</h2>
+  <p style="margin-bottom:20px;">Encapsulate a secret <span class="math">s</span> such that it remains hidden until time <span class="math">T</span> has elapsed.</p>
+
+  <div class="two-col">
+    <div class="card card-accent">
+      <h3 style="color: var(--accent);">Key Properties</h3>
+      <ul>
+        <li><span class="highlight">Fast generation:</span> Creating a puzzle is much faster than T</li>
+        <li><span class="highlight">Sequential work:</span> Secret hidden from any circuit of depth &lt; T, regardless of parallelism</li>
+        <li><span class="highlight">No shortcut:</span> Throwing more processors at it does not help</li>
+      </ul>
+    </div>
+    <div class="card card-green">
+      <h3>RSA-based TLP (Rivest, Shamir, Wagner 1996)<sup style="font-size: 14px; color: var(--accent2);">&nbsp;[1]</sup></h3>
+      <div class="math-block" style="font-size: 0.95rem; text-align: left;">
+        N = p · q &nbsp;&nbsp;(RSA modulus)<br>
+        Puzzle: (N, T, x, x<sup>2<sup>T</sup></sup> · k, Enc(k, s))<br><br>
+        Solving requires T sequential squarings:<br>
+        x → x² → x<sup>4</sup> → x<sup>8</sup> → ... → x<sup>2<sup>T</sup></sup>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: Why Sequential? -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-7">
+  <h2>Why Can't We Parallelize?</h2>
+  <p style="margin-bottom: 20px;">Repeated squaring modulo N is <span class="highlight">inherently sequential</span>.</p>
+
+  <div class="card" style="margin-bottom: 25px;">
+    <p style="font-size: 1.15rem;">To compute <span class="math">x<sup>2<sup>T</sup></sup> mod N</span>, each squaring depends on the previous result:</p>
+    <div class="flow-arrow" style="margin-top: 15px;">
+      <div class="flow-step">w<sub>0</sub> = x</div>
+      <span class="arrow">→</span>
+      <div class="flow-step">w<sub>1</sub> = w<sub>0</sub>²</div>
+      <span class="arrow">→</span>
+      <div class="flow-step">w<sub>2</sub> = w<sub>1</sub>²</div>
+      <span class="arrow">→</span>
+      <div class="flow-step">...</div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step">w<sub>T</sub> = w<sub>T-1</sub>²</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card card-red">
+      <h3 style="color: var(--accent3);">Without knowing p, q</h3>
+      <p>Must perform all T squarings one after another.</p>
+      <p style="margin-top: 10px;">1000 CPUs ≠ 1000x speedup</p>
+    </div>
+    <div class="card card-green">
+      <h3>With knowing p, q (setup authority)</h3>
+      <p>Can reduce exponent: <span class="math">2<sup>T</sup> mod φ(N)</span></p>
+      <p style="margin-top: 10px;">This allows fast puzzle generation!</p>
+    </div>
+  </div>
+
+  <div class="example-box">
+    <p class="example-label">x = 2, N = 21 (= 3 × 7), T = 3 squarings</p>
+    <p class="example-question">Compute step by step: &nbsp; 2 → 2² = ? → ?² = ? → ?² mod 21 = ?</p>
+    <button class="reveal-btn" onclick="event.stopPropagation(); this.parentElement.querySelector('.example-answer').classList.toggle('show')">Reveal</button>
+    <p class="example-answer">
+      2 → <b>4</b> → <b>16</b> → 16² = 256 mod 21 = <b>4</b><br>
+      Shortcut: φ(21) = 12, &nbsp; 2³ mod 12 = 8, &nbsp; 2<sup>8</sup> mod 21 = 256 mod 21 = <span style="color: var(--accent2); font-weight: 700;">4 ✓</span> &nbsp; (same answer, one step!)
+    </p>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: Limitation of standard TLP -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-8">
+  <h2>The Scalability Problem</h2>
+  <p style="margin-bottom: 20px;">Standard TLPs require solving <span class="highlight3">each puzzle individually</span>.</p>
+
+  <div class="card" style="margin-bottom: 25px;">
+    <h3>E-voting with n voters, k go offline</h3>
+    <div class="flow-arrow">
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle 1<br><span class="small">T squarings</span></div>
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle 2<br><span class="small">T squarings</span></div>
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle 3<br><span class="small">T squarings</span></div>
+      <div class="flow-step" style="border-color: var(--accent3);">...</div>
+      <div class="flow-step" style="border-color: var(--accent3);">Puzzle k<br><span class="small">T squarings</span></div>
+    </div>
+    <p style="text-align: center; margin-top:10px;">Total work: <span class="highlight3">k × T</span> sequential squarings → potentially millions of puzzles!</p>
+  </div>
+
+  <div class="card card-green">
+    <h3>The key insight of Malavolta &amp; Thyagarajan</h3>
+    <p style="font-size: 1.2rem;">What if we could <span class="highlight2">evaluate a function over puzzles first</span>, then solve <span class="highlight2">just one puzzle</span>?</p>
+    <div class="flow-arrow" style="margin-top: 10px;">
+      <div class="flow-step active-step">Combine all puzzles<br><span class="small">instant</span></div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step" style="border-color: var(--accent2);">Solve 1 puzzle<br><span class="small">T squarings</span></div>
+    </div>
+    <p style="text-align: center; margin-top:10px;">Complexity: <span class="highlight3">O(n · T)</span> → <span class="highlight2">O(m · T)</span> → for 1M voters (n) and 5 candidates (m), that's <span class="highlight2">5 puzzles</span> instead of <span class="highlight3">1,000,000</span></p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: Section - Homomorphic Encryption (Concept 2) -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-9">
+  <p class="subtitle">Concept 2</p>
+  <h2>Homomorphic Encryption</h2>
+  <p style="color: var(--text-dim); font-size: 1.2rem;">Computing on encrypted data without decrypting it</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: What is Homomorphic Encryption? -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-10">
+  <h2>What is Homomorphic Encryption?</h2>
+  <p style="margin-bottom: 20px;">A cryptosystem where operations on <span class="highlight">ciphertexts</span> correspond to operations on <span class="highlight2">plaintexts</span>.</p>
+
+  <div class="math-block">
+    Enc(a) ⊕ Enc(b) &nbsp;=&nbsp; Enc(a + b)
+  </div>
+
+  <div class="two-col" style="margin-top: 25px;">
+    <div>
+      <h3>Without Homomorphism</h3>
+      <div class="flow-arrow">
+        <div class="flow-step">Decrypt all</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">Compute f(x)</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">Re-encrypt</div>
+      </div>
+      <p class="small">Requires access to the secret key → breaks privacy</p>
+    </div>
+    <div>
+      <h3>With Homomorphism</h3>
+      <div class="flow-arrow">
+        <div class="flow-step active-step">Compute on ciphertexts directly</div>
+        <span class="arrow">→</span>
+        <div class="flow-step active-step">Decrypt once</div>
+      </div>
+      <p class="small">No one needs to see the plaintext until the final result</p>
+    </div>
+  </div>
+
+  <div class="example-box">
+    <p class="example-label">Paillier addition with N = 7, N² = 49</p>
+    <p class="example-question">Enc(s) = (1+N)<sup>s</sup> mod N² &nbsp;&nbsp;→&nbsp;&nbsp; Enc(2) = 8² mod 49 = <b>15</b> &nbsp;&nbsp; Enc(3) = 8³ mod 49 = <b>22</b></p>
+    <p class="example-question" style="margin-top: 4px;">What is 15 × 22 mod 49? And what secret does it decode to?</p>
+    <button class="reveal-btn" onclick="event.stopPropagation(); this.parentElement.querySelector('.example-answer').classList.toggle('show')">Reveal</button>
+    <p class="example-answer">15 × 22 = 330 &nbsp;&nbsp;→&nbsp;&nbsp; 330 mod 49 = <b>36</b> &nbsp;&nbsp;→&nbsp;&nbsp; Decode: (36 − 1) / 7 = <span style="color: var(--accent2); font-weight: 700;">5 = 2 + 3 ✓</span></p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Flavors of Homomorphic Encryption -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-11" data-refs='<span class="ref-tag">[2]</span> Malavolta &amp; Thyagarajan (2019) — Homomorphic Time-Lock Puzzles &amp; Applications. <span class="ref-divider">·</span> <span class="ref-tag">[3]</span> Gentry (2009) — A Fully Homomorphic Encryption Scheme. PhD thesis, Stanford.'>
+  <h2>Flavors of Homomorphism</h2>
+  <div class="three-col" style="margin-top: 10px;">
+    <div class="card card-accent">
+      <span class="tag tag-purple">Linearly Homomorphic</span>
+      <p style="font-size: 1.05rem; margin-top: 10px;">Supports <span class="highlight">addition</span> of secrets.</p>
+      <div class="math-block" style="font-size: 0.95rem;">
+        Enc(a) · Enc(b)<br>= Enc(a + b)
+      </div>
+      <p class="small" style="margin-top:10px;">Used for e-voting &amp; coin flipping.</p>
+      <p class="small" style="color: var(--accent2);">Efficient RSA-based construction.</p>
+    </div>
+    <div class="card card-green">
+      <span class="tag tag-green">Multiplicatively Homomorphic</span>
+      <p style="font-size: 1.05rem; margin-top: 10px;">Supports <span class="highlight2">multiplication</span> of secrets.</p>
+      <div class="math-block" style="font-size: 0.95rem;">
+        Enc(a) · Enc(b)<br>= Enc(a · b)
+      </div>
+      <p class="small" style="margin-top:10px;">Used for contract signing.</p>
+      <p class="small" style="color: var(--accent2);">Efficient RSA-based construction.</p>
+    </div>
+    <div class="card card-red">
+      <span class="tag tag-red">Fully Homomorphic<sup style="font-size: 14px; color: var(--accent3);">&nbsp;[3]</sup></span>
+      <p style="font-size: 1.05rem; margin-top: 10px;">Supports <span class="highlight3">any function</span> (NAND gates).</p>
+      <div class="math-block" style="font-size: 0.95rem;">
+        Eval(C, Enc(a), Enc(b))<br>= Enc(C(a, b))
+      </div>
+      <p class="small" style="margin-top:10px;">Needed for sealed-bid auctions.</p>
+      <p class="small" style="color: var(--accent3);">Requires obfuscation → theoretical<sup style="color: var(--accent3);">&nbsp;[2]</sup>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: Section - HTLP -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-12">
+  <p class="subtitle">Core Contribution</p>
+  <h2>Homomorphic Time-Lock Puzzles</h2>
+  <p style="color: var(--text-dim); font-size: 1.2rem;">Eliminating the trusted key holder - decryption through time, not authority</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: HTLP - Four Algorithms -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-13">
+  <h2 style="margin-bottom: 18px;">HTLP: Four Algorithms</h2>
+  <p style="margin-bottom: 22px; font-size: 1.1rem;">An HTLP scheme is defined by <span class="highlight">four algorithms</span>.</p>
+
+  <table style="font-size: 1.05rem; margin: 8px 0;">
+    <tbody><tr>
+      <th style="padding: 14px 22px;">Algorithm</th>
+      <th style="padding: 14px 22px;">Description</th>
+      <th style="padding: 14px 22px;">Key Feature</th>
+    </tr>
+    <tr>
+      <td style="padding: 14px 22px;"><span class="highlight">HP.PSetup</span>(1<sup>λ</sup>, T)</td>
+      <td style="padding: 14px 22px;">Generate public parameters pp</td>
+      <td style="padding: 14px 22px;">One-time setup, fixes N, g, h</td>
+    </tr>
+    <tr>
+      <td style="padding: 14px 22px;"><span class="highlight">HP.PGen</span>(pp, s)</td>
+      <td style="padding: 14px 22px;">Create puzzle Z for secret s</td>
+      <td style="padding: 14px 22px;">Fast (knows group order)</td>
+    </tr>
+    <tr>
+      <td style="padding: 14px 22px;"><span class="highlight">HP.PEval</span>(C, pp, Z<sub>1</sub>..Z<sub>n</sub>)</td>
+      <td style="padding: 14px 22px;">Evaluate C → outputs a <span class="highlight2">new puzzle</span></td>
+      <td style="padding: 14px 22px;">Creates new puzzle, no solving!</td>
+    </tr>
+    <tr>
+      <td style="padding: 14px 22px;"><span class="highlight">HP.PSolve</span>(pp, Z)</td>
+      <td style="padding: 14px 22px;">Solve a puzzle to recover secret</td>
+      <td style="padding: 14px 22px;">T sequential squarings</td>
+    </tr>
+  </tbody></table>
+
+  <div class="card card-green" style="margin-top: 24px; padding: 20px 26px;">
+    <p style="font-size: 1.15rem;"><span class="highlight2">PEval outputs a fresh puzzle</span> encoding C(s<sub>1</sub>,...,s<sub>n</sub>) — it can be solved like any other puzzle, or fed into further PEval calls.</p>
+    <p style="font-size: 1.1rem; margin-top: 12px;"><span class="highlight2">Compactness:</span> the evaluated puzzle size and solving time are <span class="highlight2">independent of the circuit size</span>.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: HTLP vs Standard HE -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-14">
+  <h2>HTLP vs. Standard Homomorphic Encryption</h2>
+  <p style="margin-bottom: 30px; font-size: 1.1rem;">Both compute on encrypted data — they differ in <span class="highlight">how decryption happens</span>.</p>
+
+  <div class="two-col">
+    <div class="card card-red">
+      <span class="tag tag-red">Standard HE</span>
+      <h3 style="color: var(--accent3);">Single Point of Failure</h3>
+      <ul>
+        <li>Requires a <span class="highlight3">trusted party</span> holding the secret key</li>
+        <li>Key compromised → all encrypted data exposed</li>
+        <li>Counting is <span class="highlight3">private</span>, only the key holder can finalize</li>
+      </ul>
+    </div>
+    <div class="card card-green">
+      <span class="tag tag-green">HTLP</span>
+      <h3>No Trusted Key Holder</h3>
+      <ul>
+        <li><span class="highlight2">Anyone</span> can solve the aggregated puzzle</li>
+        <li>No secret key, <span class="highlight2">time itself decrypts</span></li>
+        <li>Counting is <span class="highlight2">public</span> and verifiable</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 30px;">
+    <h3 style="color: var(--accent);">Why this matters for blockchains</h3>
+    <p style="font-size: 1.1rem;">No trusted authority means the protocol is <span class="highlight">deployable on a public ledger</span>. Anyone can run PEval to combine puzzles and PSolve to recover the result.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: LHTLP Construction -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-15">
+  <h2>LHTLP — How It Works</h2>
+  <p style="margin-bottom: 18px;">Based on a <span class="highlight">Paillier-style</span> encoding in <span class="math">Z*<sub>N²</sub></span>. Four steps, no trusted party.</p>
+
+  <div class="two-col" style="gap: 22px;">
+    <div class="card card-accent">
+      <span class="tag tag-purple">Step 1 · Setup</span>
+      <p style="margin-top: 8px;">Generate the public parameters once.</p>
+      <div class="math-block" style="font-size: 1.05rem; text-align: left; margin: 12px 0; padding: 14px 22px; line-height: 1.7;">
+        N = p · q &nbsp; <span style="color: var(--text-dim);">(strong RSA)</span><br>
+        g — generator of J<sub>N</sub><br>
+        h = g<sup>2<sup>T</sup></sup> mod N<br>
+        pp = (T, N, g, h)
+      </div>
+    </div>
+
+    <div class="card card-green">
+      <span class="tag tag-green">Step 2 · Generate Puzzle</span>
+      <p style="margin-top: 8px;">Encrypt secret <span class="math">s</span> with random <span class="math">r</span>.</p>
+      <div class="math-block" style="font-size: 1.05rem; text-align: left; margin: 12px 0; padding: 14px 22px; line-height: 1.7;">
+        u = g<sup>r</sup> mod N<br>
+        v = h<sup>r·N</sup> · (1+N)<sup>s</sup> mod N²<br>
+        Z = (u, v)
+      </div>
+    </div>
+
+    <div class="card card-accent">
+      <span class="tag tag-purple">Step 3 · Combine (PEval)</span>
+      <p style="margin-top: 8px;">Multiply puzzles component-wise. <span class="highlight">No solving needed.</span></p>
+      <div class="math-block" style="font-size: 1.05rem; text-align: left; margin: 12px 0; padding: 14px 22px; line-height: 1.7;">
+        ũ = ∏ u<sub>i</sub> mod N<br>
+        ṽ = ∏ v<sub>i</sub> mod N²
+      </div>
+      <p class="small" style="color: var(--accent2); margin-top: 4px;">→ Result encodes ∑ s<sub>i</sub></p>
+    </div>
+
+    <div class="card card-green">
+      <span class="tag tag-green">Step 4 · Solve (PSolve)</span>
+      <p style="margin-top: 8px;"><span class="highlight2">T sequential squarings</span>, then decode.</p>
+      <div class="math-block" style="font-size: 1.05rem; text-align: left; margin: 12px 0; padding: 14px 22px; line-height: 1.7;">
+        w = u<sup>2<sup>T</sup></sup> mod N<br>
+        s = decode(v, w<sup>N</sup>)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: Why It Works -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-16">
+  <h2>Why Adding Puzzles Works</h2>
+  <p style="margin-bottom: 22px; font-size: 1.1rem;">Each puzzle has <span class="highlight">two parts</span>. They combine <span class="highlight2">independently</span> when puzzles are multiplied.</p>
+
+  <div class="two-col">
+    <div class="card card-accent">
+      <span class="tag tag-purple">Secret Encoding</span>
+      <div class="math-block" style="margin: 12px 0; font-size: 1.2rem;">
+        (1+N)<sup>s</sup>
+      </div>
+      <p>Carries the secret s.</p>
+      <div class="math-block" style="margin: 12px 0; font-size: 1rem;">
+        (1+N)<sup>a</sup> · (1+N)<sup>b</sup> = (1+N)<sup>a+b</sup>
+      </div>
+      <p class="small" style="color: var(--accent);">→ Multiplying = adding the secrets</p>
+    </div>
+
+    <div class="card card-green">
+      <span class="tag tag-green">Time-Lock Mask</span>
+      <div class="math-block" style="margin: 12px 0; font-size: 1.2rem;">
+        h<sup>r·N</sup>
+      </div>
+      <p>Hides the encoding until time T.</p>
+      <div class="math-block" style="margin: 12px 0; font-size: 1rem;">
+        h<sup>r<sub>1</sub>·N</sup> · h<sup>r<sub>2</sub>·N</sup> = h<sup>(r<sub>1</sub>+r<sub>2</sub>)·N</sup>
+      </div>
+      <p class="small" style="color: var(--accent2);">→ Masks combine in their own subgroup</p>
+    </div>
+  </div>
+
+  <div class="example-box" style="margin-top: 22px;">
+    <p class="example-label">Voting example: N = 7, 3 voters, 2 vote Codex (s = 1)</p>
+    <p class="example-question">v₁ = (1+7)¹ = 8, &nbsp; v₂ = 8, &nbsp; v₃ = (1+7)⁰ = 1 &nbsp;→&nbsp; Product mod 49 = ?</p>
+    <button class="reveal-btn" onclick="event.stopPropagation(); this.parentElement.querySelector('.example-answer').classList.toggle('show')">Reveal</button>
+    <p class="example-answer">8 × 8 × 1 = 64 mod 49 = <b>15</b> &nbsp;→&nbsp; Decode: (15 − 1) / 7 = <span style="color: var(--accent2); font-weight: 700;">2 votes for Codex ✓</span></p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: MHTLP -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-17">
+  <h2>Multiplicatively Homomorphic TLP (MHTLP)</h2>
+  <p style="margin-bottom: 24px; font-size: 1.1rem;"><span class="highlight">Same blueprint, different encoding.</span> Swap Paillier for a Diffie-Hellman structure in <span class="math">J<sub>N</sub></span>.</p>
+
+  <div class="two-col">
+    <div class="card card-accent">
+      <span class="tag tag-purple">LHTLP encoding</span>
+      <div class="math-block" style="margin: 14px 0; font-size: 1.05rem;">
+        v = h<sup>r·N</sup> · (1+N)<sup>s</sup> mod N²
+      </div>
+      <p>Combine: <span class="highlight">v<sub>1</sub> · v<sub>2</sub> &nbsp;encodes&nbsp; s<sub>1</sub> + s<sub>2</sub></span></p>
+      <p class="small" style="margin-top: 10px; color: var(--text-dim);">→ Used for sums (e.g. vote counts)</p>
+    </div>
+    <div class="card card-green">
+      <span class="tag tag-green">MHTLP encoding</span>
+      <div class="math-block" style="margin: 14px 0; font-size: 1.05rem;">
+        v = h<sup>r</sup> · s mod N
+      </div>
+      <p>Combine: <span class="highlight2">v<sub>1</sub> · v<sub>2</sub> &nbsp;encodes&nbsp; s<sub>1</sub> · s<sub>2</sub></span></p>
+      <p class="small" style="margin-top: 10px; color: var(--text-dim);">→ Used for products (e.g. contract signing)</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 25px;">
+    <h3>Useful Variant: XOR via Multiplication</h3>
+    <p>Encode a bit <span class="math">s ∈ {0, 1}</span> as <span class="math">(-1)<sup>s</sup></span> → multiplying encodings yields the <span class="highlight">XOR</span> of the bits.</p>
+    <p class="small" style="margin-top: 10px;"><span class="highlight">Security:</span> Sequential Squaring + DDH over <span class="math">J<sub>N</sub></span>.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: Section - Coin Flipping -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-18">
+  <p class="subtitle">Application 1</p>
+  <h2>Multi-Party Coin Flipping</h2>
+  <p style="color: var(--text-dim); font-size: 1.2rem;">Fair randomness without trust</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19: Coin Flipping -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-19">
+  <h2>Multi-Party Coin Flipping</h2>
+  <p style="margin-bottom: 10px;"><span class="highlight">Goal:</span> n parties flip a fair coin. Even n-1 colluders cannot bias the outcome.</p>
+
+  <div class="card" style="margin-bottom: 20px;">
+    <h3>Protocol (using LHTLP)</h3>
+    <div class="flow-arrow">
+      <div class="flow-step active-step">
+        <span class="tag tag-purple" style="margin-bottom:5px;">Setup</span><br>
+        Generate pp
+      </div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step">
+        <span class="tag tag-green" style="margin-bottom:5px;">Each Party</span><br>
+        Choose random b<sub>i</sub><br>
+        Z<sub>i</sub> ← PGen(pp, b<sub>i</sub>)<br>
+        Broadcast Z<sub>i</sub>
+      </div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step">
+        <span class="tag tag-purple" style="margin-bottom:5px;">Combine</span><br>
+        Z ← PEval(⊕, Z<sub>1</sub>,...,Z<sub>n</sub>)
+      </div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step" style="border-color: var(--accent2);">
+        <span class="tag tag-green" style="margin-bottom:5px;">Result</span><br>
+        s ← PSolve(Z)<br>
+        coin = LSB(s)
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col" style="align-items: stretch;">
+    <div class="card card-accent">
+      <h3 style="color: var(--accent);">Why it works</h3>
+      <ul>
+        <li>Each bit b<sub>i</sub> is hidden inside a time-lock puzzle</li>
+        <li>Even if n-1 parties collude, the last bit is unknown</li>
+        <li>Only <span class="highlight">one puzzle</span> to solve (regardless of who goes offline)</li>
+      </ul>
+    </div>
+    <div class="card card-green" style="display: flex; flex-direction: column;">
+      <h3>Complexity Comparison</h3>
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+        <table style="width: auto; text-align: center;">
+          <tbody>
+            <tr><td style="text-align: center;">Classical TLP</td><td style="text-align: center;"><span class="highlight3">n × T</span> squarings</td></tr>
+            <tr><td style="text-align: center;">HTLP</td><td style="text-align: center;"><span class="highlight2">1 × T</span> squarings</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20: Section - E-Voting -->
+<!-- ============================================================ -->
+<div class="slide section-title" id="slide-20">
+  <p class="subtitle">Application 2</p>
+  <h2>E-Voting</h2>
+  <p style="color: var(--text-dim); font-size: 1.2rem;">Scalable, unbiased elections without a trusted authority</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 21: E-Voting Protocol -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-21">
+  <h2>E-Voting Protocol</h2>
+  <p style="margin-bottom: 22px;"><span class="highlight">Setting:</span> n voters, m candidates, no trusted tallying authority.</p>
+
+  <div class="card card-accent" style="margin-bottom: 18px;">
+    <span class="tag tag-purple">Voting Phase</span>
+    <h3 style="color: var(--accent); margin-top: 6px;">Each voter casts an m-puzzle ballot</h3>
+    <p style="margin-bottom: 14px;">Encrypt <span class="highlight2">1</span> for the chosen candidate, <span class="highlight">0</span> for everyone else.</p>
+    <div class="flow-arrow">
+      <div class="flow-step">Vote for j</div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step" style="border-color: var(--accent2);">PGen(0), …, <span class="highlight2">PGen(1)</span> at j, …, PGen(0)</div>
+      <span class="arrow">→</span>
+      <div class="flow-step">Broadcast ballot</div>
+    </div>
+    <p class="small" style="margin-top: 12px; text-align: center;">Example (2 candidates): Vote Codex = <span class="math">(PGen(1), PGen(0))</span> &nbsp;&nbsp; Vote Claude = <span class="math">(PGen(0), PGen(1))</span></p>
+  </div>
+
+  <div class="card card-green">
+    <span class="tag tag-green">Counting Phase</span>
+    <h3 style="margin-top: 6px;">Combine first, solve once per candidate</h3>
+    <div class="flow-arrow">
+      <div class="flow-step">All n ballots</div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step">PEval — homomorphic sum<br><span class="small">per candidate</span></div>
+      <span class="arrow">→</span>
+      <div class="flow-step active-step" style="border-color: var(--accent2);">PSolve — recover total<br><span class="small">T squarings</span></div>
+    </div>
+    <p style="margin-top: 14px; text-align: center; font-size: 1.1rem;">Solve <span class="highlight2">m puzzles total</span>, not n. <span class="small">For 1M voters and 5 candidates: 5 puzzles instead of up to 1M.</span></p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 22: E-Voting Security -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-22">
+  <h2>E-Voting Security Properties</h2>
+  <div class="three-col">
+    <div class="card card-accent">
+      <span class="emoji">🔒</span>
+      <h3 style="color: var(--accent); text-align: center;">Ballot Secrecy</h3>
+      <p>Individual votes are hidden inside time-lock puzzles. The LHTLP security guarantees no one can decrypt before time T.</p>
+    </div>
+    <div class="card card-green">
+      <span class="emoji">⚖</span>
+      <h3 style="text-align: center;">No Bias</h3>
+      <p>Votes are committed before counting starts. The time-lock prevents anyone from peeking at partial results during the voting phase.</p>
+    </div>
+    <div class="card card-red">
+      <span class="emoji">🛡</span>
+      <h3 style="color: var(--accent3); text-align: center;">DoS Resilient</h3>
+      <p>If voters go offline, their votes can still be counted via puzzle solving. No need for the voter's cooperation in the counting phase.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 25px;">
+    <h3>No Trusted Authority Needed</h3>
+    <p>The counting operation is <span class="highlight">public</span>, anyone can homomorphically combine puzzles and solve them. This makes the protocol suitable for <span class="highlight2">blockchain-based</span> deployment where the bulletin board is append-only and publicly readable.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 23: Beyond LHTLP & Recent Advances -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-23" data-refs='<span class="ref-tag">[4]</span> Brakerski, Döttling, Garg, Malavolta (2019) — Leveraging Linear Decryption: Rate-1 FHE &amp; Time-Lock Puzzles. TCC &#39;19.'>
+  <h2>Beyond LHTLP: Limitations &amp; Recent Advances</h2>
+
+  <div class="two-col">
+    <div class="card card-red">
+      <span class="tag tag-red">Limitations</span>
+      <h3 style="color: var(--accent3);">More Complex Voting Needs More than LHTLP</h3>
+      <ul>
+        <li><span class="highlight3">LHTLP only supports addition:</span> ideal for simple plurality voting</li>
+        <li><span class="highlight3">Ranked-choice / IRV:</span> requires comparisons → MHTLP or fully homomorphic</li>
+        <li><span class="highlight3">Weighted voting / STV:</span> needs richer arithmetic and tie-breaking logic</li>
+        <li><span class="highlight3">Verifiability:</span> often paired with zero-knowledge proofs of well-formed votes</li>
+      </ul>
+      <p class="small" style="margin-top: 10px;">→ Real-world elections demand more sophisticated cryptographic stacks.</p>
+    </div>
+
+    <div class="card card-green">
+      <span class="tag tag-green">Recent Advances (2025)</span>
+      <h3>Lattice-Based Time-Lock Puzzles<sup style="font-size: 14px; color: var(--accent2);">&nbsp;[4]</sup></h3>
+      <ul>
+        <li><span class="highlight2">Post-quantum security:</span> survives a future quantum adversary</li>
+        <li><span class="highlight2">No RSA / factoring assumption:</span> based on Learning With Errors (LWE)</li>
+        <li><span class="highlight2">Homomorphic operations</span> over time-locked data with richer expressiveness</li>
+        <li>Trade-off: larger puzzle sizes and more complex setup than RSA-based HTLP</li>
+      </ul>
+      <p class="small" style="margin-top: 10px;">→ A promising direction for quantum-resistant time-lock cryptography.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 24: Demo Results -->
+<!-- ============================================================ -->
+<div class="slide demo-banner" id="slide-24">
+  <p class="big-emoji">🎉</p>
+  <h1 style="color: var(--accent2);">Live Results</h1>
+
+  <!-- Before results are ready -->
+  <div id="results-waiting">
+    <p class="subtitle" style="color: var(--text);" id="results-status-msg">Waiting for the time-lock puzzles to be solved...</p>
+    <div style="width: 500px; height: 14px; background: var(--border); border-radius: 7px; margin: 24px auto; overflow: hidden;">
+      <div id="results-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 1s ease; border-radius: 7px;"></div>
+    </div>
+    <p style="font-size: 20px; color: var(--text-dim);">No individual vote was ever decrypted, only the aggregate result is recovered.</p>
+  </div>
+
+  <!-- After results are ready -->
+  <div id="results-final" style="display: none;">
+    <div class="results-panel">
+      <div class="result-row">
+        <span class="highlight3" style="width: 100px; text-align: right;">Codex</span>
+        <div class="result-bar"><div class="result-fill codex" id="bar-codex" style="width: 0%;"></div></div>
+        <span class="highlight3" id="count-codex" style="width: 60px;">0</span>
+      </div>
+      <div class="result-row">
+        <span class="highlight" style="width: 100px; text-align: right;">Claude</span>
+        <div class="result-bar"><div class="result-fill claude" id="bar-claude" style="width: 0%;"></div></div>
+        <span class="highlight" id="count-claude" style="width: 60px;">0</span>
+      </div>
+    </div>
+    <p style="margin-top: 30px; font-size: 22px; color: var(--accent);">
+      No individual vote was ever decrypted, only the aggregate was recovered through time.
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 25: Summary & Key Takeaways (merged) -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-25">
+  <h2>Summary &amp; Key Takeaways</h2>
+  <div class="two-col" style="gap: 24px; margin-top: 14px;">
+    <div class="card card-accent">
+      <span class="emoji">⚡</span>
+      <h3 style="color: var(--accent);">1. Evaluate first, solve once</h3>
+      <p>HTLPs reduce time-lock workload from <span class="highlight3">O(n · T)</span> to <span class="highlight2">O(m · T)</span>, independent of the number of participants.</p>
+    </div>
+    <div class="card card-green">
+      <span class="emoji">⛓</span>
+      <h3>2. No trusted authority</h3>
+      <p>Counting is <span class="highlight2">public</span>, anyone can run PEval and PSolve. A natural fit for blockchains and public bulletin boards.</p>
+    </div>
+    <div class="card card-accent">
+      <span class="emoji">🔧</span>
+      <h3 style="color: var(--accent);">3. Two practical flavors</h3>
+      <p><span class="highlight">LHTLP</span> for additions (e-voting, coin flipping). <span class="highlight">MHTLP</span> for multiplications (contract signing). Both efficient under standard RSA assumptions.</p>
+    </div>
+    <div class="card card-red">
+      <span class="emoji">🔬</span>
+      <h3 style="color: var(--accent3);">4. Open frontier</h3>
+      <p>Practical fully-homomorphic TLP, public-coin setup, and <span class="highlight3">post-quantum lattice-based HTLPs (2025)</span> remain active research directions.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 26: Thank You -->
+<!-- ============================================================ -->
+<div class="slide title-slide" id="slide-26">
+  <h1>Thank You!</h1>
+  <p class="subtitle" style="margin-top: 10px;">Questions?</p>
+  <div style="margin-top: 40px;">
+    <p class="small">Paper: Malavolta, G. &amp; Thyagarajan, S. A. K. (2019). <em>Homomorphic Time-Lock Puzzles and Applications</em>. IACR ePrint 2019/635.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 27: Reviewer Q&A — five representative Q&A pairs -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-27" data-refs='<span class="ref-tag">[4]</span> Brakerski, Döttling, Garg, Malavolta (2019) — Leveraging Linear Decryption: Rate-1 FHE &amp; Time-Lock Puzzles. TCC &#39;19.'>
+  <h2 style="margin-bottom: 18px;">Your Questions and Our Answers</h2>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+
+    <div class="card card-accent" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight" style="font-weight: 700;">Q1.</span> How is the time parameter <span class="math">T</span> chosen, and who maintains it as hardware gets faster?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> <span class="math">T</span> = desired delay × fastest known squarings/sec, with a 2–4× safety margin for ASIC speed-ups. Open communities (drand, IACR) republish reference benchmarks over time.</p>
+    </div>
+
+    <div class="card card-green" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight2" style="font-weight: 700;">Q2.</span> What happens if a voter submits a puzzle that encodes garbage instead of a valid vote?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> The tally would be corrupted. Defense: a NIZK proof of well-formedness (ballot ∈ {0,1}<sup>m</sup>), checked once at submission, a few KB, ≈ 5–50 ms per ballot.</p>
+    </div>
+
+    <div class="card card-red" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight3" style="font-weight: 700;">Q3.</span> Can the trusted setup be eliminated while keeping efficiency?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Open problem. Class groups (Wesolowski) give public-coin parameters at 5–10× overhead; a fully trustless RSA-style setup remains a research frontier.</p>
+    </div>
+
+    <div class="card card-accent" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight" style="font-weight: 700;">Q4.</span> How practical are HTLPs at million-voter scale?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Per ballot ≈ m × 768 B at 128-bit security. The win: solving cost is <span class="math">O(m·T)</span> regardless of n, ballot storage moves to a data-availability layer.</p>
+    </div>
+
+    <div class="card card-green" style="padding: 18px 24px;">
+      <p style="font-size: 22px;"><span class="highlight2" style="font-weight: 700;">Q5.</span> Can fully homomorphic HTLP be built without indistinguishability obfuscation?</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Partially. <span class="highlight2">Brakerski–Döttling–Garg–Malavolta (TCC '19)</span><sup style="color: var(--accent2);">&nbsp;[4]</sup> obtain homomorphic TLPs from rate-1 FHE under LWE, sidestepping iO. Fully compact FHTLP without iO and lattice-based HTLPs (2024–25) remain the active frontier.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 28: References -->
+<!-- ============================================================ -->
+<div class="slide" id="slide-28">
+  <h2 style="margin-bottom: 28px;">References</h2>
+
+  <ol style="list-style: none; padding-left: 0; margin: 0; counter-reset: ref;">
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[1]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Rivest, R. L., Shamir, A., &amp; Wagner, D. A. (1996). <em>Time-Lock Puzzles and Timed-Release Crypto.</em> Technical report MIT/LCS/TR-684.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">people.csail.mit.edu/rivest/pubs/RSW96.pdf</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slide 6</span>
+    </li>
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[2]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Malavolta, G., &amp; Thyagarajan, S. A. K. (2019). <em>Homomorphic Time-Lock Puzzles and Applications.</em> CRYPTO 2019 / IACR ePrint 2019/635.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">eprint.iacr.org/2019/635</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slide 11</span>
+    </li>
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--border); align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[3]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Gentry, C. (2009). <em>A Fully Homomorphic Encryption Scheme.</em> PhD thesis, Stanford University.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">crypto.stanford.edu/craig/craig-thesis.pdf</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slide 11</span>
+    </li>
+
+    <li style="display: grid; grid-template-columns: 56px 1fr 180px; gap: 16px; padding: 14px 4px; align-items: baseline;">
+      <span style="font-weight: 700; color: var(--accent); font-size: 22px;">[4]</span>
+      <div>
+        <p style="font-size: 21px; line-height: 1.45;">Brakerski, Z., Döttling, N., Garg, S., &amp; Malavolta, G. (2019). <em>Leveraging Linear Decryption: Rate-1 Fully-Homomorphic Encryption and Time-Lock Puzzles.</em> TCC 2019.</p>
+        <p style="font-size: 17px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; color: var(--accent2);">dl.acm.org/doi/10.1007/978-3-030-36033-7_16</p>
+      </div>
+      <span class="small" style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--text-dim);">Slides 23, 27</span>
+    </li>
+
+  </ol>
+</div>
+
+</div><!-- end #slide-container -->
+
+<!-- ============================================================ -->
+<!-- NAVIGATION SCRIPT -->
+<!-- ============================================================ -->
+<script>
+  // ============================================================
+  // CONFIG — change this if the Flask server is elsewhere
+  // ============================================================
+  const API_BASE = 'http://localhost:5000';
+
+  // ============================================================
+  // SCALING
+  // ============================================================
+  const container = document.getElementById('slide-container');
+  function scaleSlides() {
+    const scaleX = window.innerWidth / 1920;
+    const scaleY = window.innerHeight / 1080;
+    const scale = Math.min(scaleX, scaleY);
+    container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+  scaleSlides();
+  window.addEventListener('resize', scaleSlides);
+
+  // ============================================================
+  // SLIDE NAVIGATION
+  // ============================================================
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+
+  const refFooter = document.getElementById('ref-footer');
+
+  function updateSlide() {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+
+    const refs = slides[current].dataset.refs;
+    if (refs) {
+      refFooter.innerHTML = refs;
+      refFooter.classList.add('visible');
+    } else {
+      refFooter.classList.remove('visible');
+      refFooter.innerHTML = '';
+    }
+  }
+
+  function next() { if (current < total - 1) { current++; updateSlide(); } }
+  function prev() { if (current > 0) { current--; updateSlide(); } }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault(); next();
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    }
+    if (e.key === 'Home') { current = 0; updateSlide(); }
+    if (e.key === 'End') { current = total - 1; updateSlide(); }
+  });
+
+  // Click navigation — skip clicks on example boxes
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.example-box')) return;
+    if (e.clientX < window.innerWidth / 3) prev();
+    else next();
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) { diff < 0 ? next() : prev(); }
+  });
+
+  updateSlide();
+
+  // ============================================================
+  // SERVER POLLING — timer, vote count, results
+  // ============================================================
+  let solveStartTime = null;
+  let serverReachable = false;
+
+  // Smooth-countdown state: server tells us the true remaining time on each
+  // /status poll; between polls we decrement locally so the digits don't jump.
+  let serverRemaining = null;     // seconds, last value the server sent
+  let serverRemainingAt = 0;      // ms (Date.now()) when we received it
+  let isSolvingNow = false;
+  let hasResults = false;
+
+  function formatTime(seconds) {
+    seconds = Math.max(0, seconds);
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function tickRemaining() {
+    const el = document.getElementById('timer-remaining');
+    if (!el) return;
+    if (hasResults) { el.textContent = '0:00'; return; }
+    if (!isSolvingNow || serverRemaining === null) return;
+    const elapsed = (Date.now() - serverRemainingAt) / 1000;
+    el.textContent = formatTime(serverRemaining - elapsed);
+  }
+  setInterval(tickRemaining, 250);
+
+  function setBars(codexPct, claudePct) {
+    const af = document.getElementById('codex-fill');
+    const bf = document.getElementById('claude-fill');
+    const ap = document.getElementById('codex-pct');
+    const bp = document.getElementById('claude-pct');
+    if (af) af.style.width = codexPct + '%';
+    if (bf) bf.style.width = claudePct + '%';
+    if (ap) ap.textContent = Math.round(codexPct) + '%';
+    if (bp) bp.textContent = Math.round(claudePct) + '%';
+  }
+
+  function pollServer() {
+    fetch(API_BASE + '/status')
+      .then(r => r.json())
+      .then(data => {
+        serverReachable = true;
+
+        // Update vote count on slide 3
+        const vc = document.getElementById('vote-count-slide');
+        if (vc) vc.textContent = data.votes;
+
+        const timer = document.getElementById('solve-timer');
+        const pct = data.progress || 0;
+        const codexPct = data.codex_progress || 0;
+        const claudePct = data.claude_progress || 0;
+
+        // Cache state for the local countdown ticker.
+        isSolvingNow = !!data.solving;
+        hasResults = !!data.results;
+        if (typeof data.remaining_seconds === 'number') {
+          serverRemaining = data.remaining_seconds;
+          serverRemainingAt = Date.now();
+        }
+
+        if (data.solving) {
+          // Show timer bar
+          timer.classList.add('visible');
+          document.getElementById('timer-status').textContent = data.message || 'Solving...';
+          setBars(codexPct, claudePct);
+          tickRemaining(); // refresh immediately so the display matches the new poll
+
+          // Update results progress bar on slide 24
+          const rpb = document.getElementById('results-progress-bar');
+          if (rpb) rpb.style.width = pct + '%';
+          const rsm = document.getElementById('results-status-msg');
+          if (rsm) rsm.textContent = data.message || 'Solving...';
+
+        } else if (data.results) {
+          // Solving complete — show results
+          timer.classList.add('visible');
+          document.getElementById('timer-status').textContent = 'Tally complete!';
+          setBars(100, 100);
+          document.getElementById('timer-remaining').textContent = '0:00';
+
+          // Populate results
+          const codex = data.results.Codex || 0;
+          const claude = data.results.Claude || 0;
+          const maxVotes = Math.max(codex, claude, 1);
+
+          document.getElementById('results-waiting').style.display = 'none';
+          document.getElementById('results-final').style.display = 'block';
+          document.getElementById('count-codex').textContent = codex;
+          document.getElementById('count-claude').textContent = claude;
+          document.getElementById('bar-codex').style.width = (codex / maxVotes * 100) + '%';
+          document.getElementById('bar-claude').style.width = (claude / maxVotes * 100) + '%';
+
+        } else {
+          // Not solving yet — show vote count on timer if votes exist
+          if (data.votes > 0) {
+            timer.classList.add('visible');
+            document.getElementById('timer-status').textContent = data.votes + ' votes encrypted';
+            setBars(0, 0);
+            document.getElementById('timer-remaining').textContent = '--:--';
+          } else {
+            timer.classList.remove('visible');
+          }
+          solveStartTime = null;
+        }
+      })
+      .catch(() => { serverReachable = false; });
+  }
+
+  // Poll every 2 seconds
+  setInterval(pollServer, 2000);
+  pollServer();
+</script>
+
+
+
+</body></html>
