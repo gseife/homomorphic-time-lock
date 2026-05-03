@@ -1285,8 +1285,8 @@
       <h3 style="color: var(--accent3);">More Complex Voting Needs More than LHTLP</h3>
       <ul>
         <li><span class="highlight3">LHTLP only supports addition:</span> ideal for simple plurality voting</li>
-        <li><span class="highlight3">Ranked-choice / IRV:</span> requires comparisons → MHTLP or fully homomorphic</li>
-        <li><span class="highlight3">Weighted voting / STV:</span> needs richer arithmetic and tie-breaking logic</li>
+        <li><span class="highlight3">Ranked-choice:</span> requires comparisons → MHTLP or fully homomorphic</li>
+        <li><span class="highlight3">Single Transferable Vote:</span> needs richer arithmetic and tie-breaking logic</li>
         <li><span class="highlight3">Verifiability:</span> often paired with zero-knowledge proofs of well-formed votes</li>
       </ul>
       <p class="small" style="margin-top: 10px;">→ Real-world elections demand more sophisticated cryptographic stacks.</p>
@@ -1381,12 +1381,12 @@
 
     <div class="card card-accent" style="padding: 18px 24px;">
       <p style="font-size: 22px;"><span class="highlight" style="font-weight: 700;">Q1.</span> How is the time parameter <span class="math">T</span> chosen, and who maintains it as hardware gets faster?</p>
-      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> <span class="math">T</span> = desired delay × fastest known squarings/sec, with a 2–4× safety margin for ASIC speed-ups. Open communities (drand, IACR) republish reference benchmarks over time.</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> <span class="math">T</span> = desired delay × fastest known squarings/sec, with a 2–4× safety margin for ASIC (application-specific integrated circuit) speed-ups. Open communities (drand, IACR) republish reference benchmarks over time.</p>
     </div>
 
     <div class="card card-green" style="padding: 18px 24px;">
       <p style="font-size: 22px;"><span class="highlight2" style="font-weight: 700;">Q2.</span> What happens if a voter submits a puzzle that encodes garbage instead of a valid vote?</p>
-      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> The tally would be corrupted. Defense: a NIZK proof of well-formedness (ballot ∈ {0,1}<sup>m</sup>), checked once at submission, a few KB, ≈ 5–50 ms per ballot.</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> The tally would be corrupted. Defense: a NIZK (non-interactive zero-knowledge) proof of well-formedness, checked once at submission, a few KB, ≈ 5–50 ms per ballot.</p>
     </div>
 
     <div class="card card-red" style="padding: 18px 24px;">
@@ -1401,7 +1401,7 @@
 
     <div class="card card-green" style="padding: 18px 24px;">
       <p style="font-size: 22px;"><span class="highlight2" style="font-weight: 700;">Q5.</span> Can fully homomorphic HTLP be built without indistinguishability obfuscation?</p>
-      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Partially. <span class="highlight2">Brakerski–Döttling–Garg–Malavolta (TCC '19)</span><sup style="color: var(--accent2);">&nbsp;[4]</sup> obtain homomorphic TLPs from rate-1 FHE under LWE, sidestepping iO. Fully compact FHTLP without iO and lattice-based HTLPs remain the active frontier.</p>
+      <p style="font-size: 21px; margin-top: 6px; color: var(--text-dim);"><span class="highlight2" style="font-weight: 700;">A.</span> Partially. <span class="highlight2">Brakerski–Döttling–Garg–Malavolta (TCC '19)</span><sup style="color: var(--accent2);">&nbsp;[4]</sup> obtain homomorphic TLPs from rate-1 FHE (fully homomorphic encryption) under LWE, sidestepping iO (indistinguishability obfuscation). Fully compact FHTLP without iO and lattice-based HTLPs remain the active frontier.</p>
     </div>
 
   </div>
