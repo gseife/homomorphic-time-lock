@@ -44,6 +44,15 @@
     top: 50%;
     left: 50%;
     transform-origin: center center;
+    transition: top 0.3s ease;
+  }
+
+  /* When the solve-timer banner (76 px tall) is visible at the bottom,
+     shift the slide canvas up by half the banner height so the content
+     remains perfectly centered in the visible area above the banner.
+     Vertical only — horizontal centering is unchanged. */
+  body:has(#solve-timer.visible) #slide-container {
+    top: calc(50% - 38px);
   }
 
   .slide {
