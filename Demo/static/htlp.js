@@ -39,7 +39,7 @@ async function fetchParams(endpoint) {
 function lhtlpPGen(pp, s) {
   const r = randomBigInt(pp.N2);
   const u = modpow(pp.g, r, pp.N);
-  const v = modpow(pp.h, r * pp.N, pp.N2) * modpow(pp.N + 1n, BigInt(s), pp.N2) % pp.N2;
+  const v = (modpow(pp.h, r * pp.N, pp.N2) * modpow(pp.N + 1n, BigInt(s), pp.N2)) % pp.N2;
   return { u: u.toString(), v: v.toString() };
 }
 
@@ -50,7 +50,7 @@ function mhtlpPGen(pp, bit) {
   const s = bit === 0 ? 1n : pp.N - 1n;
   const r = randomBigInt(pp.N2);
   const u = modpow(pp.g, r, pp.N);
-  const v = modpow(pp.h, r, pp.N) * s % pp.N;
+  const v = (modpow(pp.h, r, pp.N) * s) % pp.N;
   return { u: u.toString(), v: v.toString(), bit };
 }
 
