@@ -37,18 +37,28 @@
       width:160px; height:160px; position:relative;
       transform-style:preserve-3d; transition:transform 0.1s;
     }
-    .coin.spinning { animation:spin-coin 1.2s linear infinite; }
-    .coin.landing  { animation:land-coin 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
+    .coin.spinning      { animation:spin-coin 0.8s linear infinite; }
+    .coin.landing-heads { animation:land-heads 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
+    .coin.landing-tails { animation:land-tails 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
     @keyframes spin-coin {
       from { transform:rotateY(0deg); }
       to   { transform:rotateY(360deg); }
     }
-    @keyframes land-coin {
+    /* ends at 1800° = 5×360° = 0° → heads face visible */
+    @keyframes land-heads {
       0%   { transform:rotateY(0deg); }
       60%  { transform:rotateY(1440deg); }
       80%  { transform:rotateY(1800deg) rotateX(10deg); }
       90%  { transform:rotateY(1798deg) rotateX(-4deg); }
       100% { transform:rotateY(1800deg); }
+    }
+    /* ends at 1980° = 180° mod 360° → tails face visible */
+    @keyframes land-tails {
+      0%   { transform:rotateY(0deg); }
+      60%  { transform:rotateY(1440deg); }
+      80%  { transform:rotateY(1980deg) rotateX(10deg); }
+      90%  { transform:rotateY(1978deg) rotateX(-4deg); }
+      100% { transform:rotateY(1980deg); }
     }
     .coin-face {
       position:absolute; width:160px; height:160px; border-radius:50%;
@@ -91,6 +101,9 @@
     #confirm-view { display:none; flex-direction:column; align-items:center; gap:10px; }
     .confirm-msg { font-size:15px; color:var(--text); font-weight:500; }
     .confirm-sub  { font-size:13px; color:var(--dim); line-height:1.5; }
+    .landed-result { font-size:30px; font-weight:800; letter-spacing:.5px; }
+    .landed-result.heads { color:var(--gold); }
+    .landed-result.tails { color:var(--silver); }
 
     details { margin-top:14px; text-align:left; }
     summary { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); cursor:pointer; }
@@ -132,8 +145,9 @@
       </div>
 
       <div id="confirm-view">
-        <p class="confirm-msg">&#10003; Your secret is locked.</p>
-        <p class="confirm-sub">You&rsquo;ll find out what it was after the coin lands.<br>Watch the screen for the reveal.</p>
+        <div id="landed-result" class="landed-result"></div>
+        <p class="confirm-msg">&#10003; Your secret is locked in.</p>
+        <p class="confirm-sub">Your bit contributes to the shared XOR.<br>Watch the screen for the group result.</p>
         <details>
           <summary>technical detail</summary>
           <div class="tech-box" id="tech-box"></div>
@@ -161,22 +175,35 @@
     async function submitFlip() {
       document.getElementById('flip-btn').disabled = true;
 
+      // Determine bit and compute puzzle before animation starts
       const randByte = new Uint8Array(1);
       crypto.getRandomValues(randByte);
       const bit = randByte[0] & 1;
-
       const puzzle = HTLP.mhtlpPGen(pp, bit);
 
+      // Kick off server submission in parallel — don't await yet
+      const submitPromise = fetch('/flip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ u: puzzle.u, v: puzzle.v }),
+      }).then(r => r.json());
+
+      // Spin for 2 seconds
+      const coin = document.getElementById('coin');
+      coin.className = 'coin spinning';
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Land on correct face
+      coin.className = bit === 1 ? 'coin landing-heads' : 'coin landing-tails';
+      await new Promise(resolve => setTimeout(resolve, 1400));
+
+      // Show result
       let data;
       try {
-        const res = await fetch('/flip', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ u: puzzle.u, v: puzzle.v }),
-        });
-        data = await res.json();
+        data = await submitPromise;
       } catch {
         alert('Network error — please try again.');
+        coin.className = 'coin';
         document.getElementById('flip-btn').disabled = false;
         return;
       }
@@ -186,8 +213,12 @@
         const cv = document.getElementById('confirm-view');
         cv.style.display = 'flex';
         document.getElementById('live-count').textContent = data.participants;
+        const label = bit === 1 ? 'Heads — 1' : 'Tails — 0';
+        const result = document.getElementById('landed-result');
+        result.textContent = label;
+        result.className = 'landed-result ' + (bit === 1 ? 'heads' : 'tails');
         document.getElementById('tech-box').textContent =
-          `bit = ${bit} (${bit === 1 ? 'Heads' : 'Tails'} — revealed after solve)\nu = ${puzzle.u.slice(0,40)}…\nv = ${puzzle.v.slice(0,40)}…`;
+          `bit = ${bit} (${bit === 1 ? 'Heads' : 'Tails'})\nu = ${puzzle.u.slice(0,40)}…\nv = ${puzzle.v.slice(0,40)}…`;
       }
     }
 
