@@ -1,12 +1,13 @@
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import time
-import random
 import threading
 from flask import Flask, render_template, request, jsonify
-from sympy import isprime, randprime
+from htlp import calibrate_T, LHTLP, MHTLP
 
 app = Flask(__name__)
 
-# Allow the presentation (loaded from file://) to poll the API.
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -14,98 +15,29 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
 
-# --- Cryptography Setup ---
-def generate_strong_prime(bits):
-    while True:
-        p_prime = randprime(2**(bits-2), 2**(bits-1))
-        p = 2 * p_prime + 1
-        if isprime(p): return p, p_prime
 
-def mod_inverse(a, m):
-    return pow(a, -1, m)
+# --- Startup prompt ---
 
-class LHTLP:
-    def __init__(self, bits=128, target_seconds=150):
-        print("Calibrating CPU and generating primes... Please wait.")
-        test_N = generate_strong_prime(128)[0] * generate_strong_prime(128)[0]
-        test_val = random.randrange(2, test_N)
-        squarings = 0
-        calib_start = time.time()
-        while time.time() - calib_start < 1.0:
-            test_val = pow(test_val, 2, test_N)
-            squarings += 1
-            
-        self.T = squarings * target_seconds
-        self.current_iteration = 0  # <--- NEW: Tracks solving progress
-        print(f"Set T = {self.T} for ~{target_seconds} seconds of solving time.")
-
-        p, _ = generate_strong_prime(bits)
-        q, _ = generate_strong_prime(bits)
-        self.N = p * q
-        self.N2 = self.N ** 2
-        order_JN = ((p - 1) * (q - 1)) // 2
-        
-        while True:
-            g_tilde = random.randrange(2, self.N)
-            self.g = (-pow(g_tilde, 2, self.N)) % self.N
-            if self.g > 1: break
-                
-        self.h = pow(self.g, pow(2, self.T, order_JN), self.N)
-        print("Setup complete. Server is ready.")
-        
-    def PGen(self, s):
-        r = random.randrange(1, self.N2)
-        u = pow(self.g, r, self.N)
-        v = (pow(self.h, r * self.N, self.N2) * pow(1 + self.N, s, self.N2)) % self.N2
-        return (u, v)
-        
-    def PEval(self, puzzles):
-        u_tilde, v_tilde = 1, 1
-        for u, v in puzzles:
-            u_tilde = (u_tilde * u) % self.N
-            v_tilde = (v_tilde * v) % self.N2
-        return (u_tilde, v_tilde)
-        
-    def PSolve(self, puzzle, progress_cb=None):
-        u, v = puzzle
-        w = u
-
-        update_interval = max(1, self.T // 100)
-        for i in range(self.T):
-            w = pow(w, 2, self.N)
-            if i % update_interval == 0:
-                self.current_iteration += update_interval
-                if progress_cb is not None:
-                    progress_cb(i + update_interval)
-        if progress_cb is not None:
-            progress_cb(self.T)
-
-        w_N_inv = mod_inverse(pow(w, self.N, self.N2), self.N2)
-        return (((v * w_N_inv) % self.N2) - 1) // self.N
-
-# --- Startup prompt: ask for tally duration ---
 def prompt_target_minutes():
     print()
     print("=" * 60)
-    print(" HTLP Demo - tally duration configuration")
+    print(" HTLP Demo — solve duration configuration")
     print("=" * 60)
-    print(" Total time the audience waits while both Codex's and")
-    print(" Claude's puzzles are solved. Each puzzle gets half of this.")
+    print(" Shared by both the e-voting and coin-flip demos.")
     while True:
-        raw = input(" Total tally time in MINUTES [default 5]: ").strip()
+        raw = input(" Solve time in MINUTES [default 2]: ").strip()
         if not raw:
-            return 5.0
+            return 2.0
         try:
             v = float(raw)
-            if v <= 0:
-                print("  -> Please enter a positive number.")
-                continue
-            return v
+            if v > 0:
+                return v
+            print("  -> Please enter a positive number.")
         except ValueError:
-            print("  -> Please enter a number (e.g. 5 or 2.5).")
+            print("  -> Please enter a number (e.g. 2 or 0.5).")
 
-def fmt_per_puzzle(seconds):
-    """Human-readable label used inside status messages."""
+
+def fmt_duration(seconds):
     if seconds < 60:
         return f"~{int(round(seconds))}s"
     minutes = seconds / 60
@@ -113,115 +45,230 @@ def fmt_per_puzzle(seconds):
         return f"~{int(round(minutes))} min"
     return f"~{minutes:.1f} min"
 
-target_total_minutes = prompt_target_minutes()
-target_total_seconds = max(4, int(round(target_total_minutes * 60)))
-target_per_puzzle = max(2, target_total_seconds // 2)
-per_puzzle_label = fmt_per_puzzle(target_per_puzzle)
-print(f" Target: {target_total_minutes:g} min total ({per_puzzle_label} per puzzle)")
+
+target_minutes = prompt_target_minutes()
+target_seconds = max(4, int(round(target_minutes * 60)))
+per_puzzle_label = fmt_duration(target_seconds / 2)
+print(f" Target: {target_minutes:g} min total ({per_puzzle_label} per puzzle)")
 print()
 
-# Initialize HTLP
-htlp = LHTLP(bits=128, target_seconds=target_per_puzzle)
+T = calibrate_T(target_seconds=max(2, target_seconds // 2))
 
-# --- Global State ---
+lhtlp = LHTLP(bits=128, T=T)
+mhtlp = MHTLP(bits=128, T=T)
+
+# --- Voting state ---
 votes = []
-is_solving = False
-results = None
-progress_msg = "Waiting for votes..."
-solve_progress = {"Codex": 0, "Claude": 0}  # per-candidate squaring counter
+vote_solving = False
+vote_results = None
+vote_progress_msg = "Waiting for votes..."
+vote_progress = {"Codex": 0, "Claude": 0}
 
-# --- Routes ---
+# --- Flip state ---
+flip_puzzles = []
+flip_bits = []       # revealed after solve
+flip_solving = False
+flip_result = None
+flip_progress = 0
+flip_progress_msg = "Waiting for participants..."
+
+
+# ── Routes ────────────────────────────────────────────────
+
 @app.route('/')
 def index():
-    return render_template('index.html', solving=is_solving)
+    return render_template('index.html')
 
-@app.route('/vote', methods=['POST'])
-def cast_vote():
-    if is_solving:
-        return jsonify({"status": "error", "message": "Voting is closed!"}), 400
-    
-    candidate = request.form.get('candidate')
-    if candidate == 'Codex':
-        vote_vector = (htlp.PGen(1), htlp.PGen(0))
-    elif candidate == 'Claude':
-        vote_vector = (htlp.PGen(0), htlp.PGen(1))
-    else:
-        return jsonify({"status": "error"}), 400
-        
-    votes.append(vote_vector)
-    return jsonify({"status": "success", "total_votes": len(votes)})
+
+@app.route('/vote')
+def vote_page():
+    return render_template('vote.html', solving=vote_solving)
+
+
+@app.route('/flip')
+def flip_page():
+    return render_template('flip.html', solving=flip_solving)
+
 
 @app.route('/admin')
 def admin():
     return render_template('admin.html')
 
+
+# ── Public params ──────────────────────────────────────────
+
+@app.route('/vote-params')
+def vote_params():
+    return jsonify(lhtlp.public_params())
+
+
+@app.route('/flip-params')
+def flip_params():
+    return jsonify(mhtlp.public_params())
+
+
+# ── Vote endpoints ─────────────────────────────────────────
+
+@app.route('/vote', methods=['POST'])
+def cast_vote():
+    if vote_solving:
+        return jsonify({"status": "error", "message": "Voting is closed!"}), 400
+    data = request.get_json(silent=True) or {}
+    candidate = data.get('candidate') or request.form.get('candidate')
+    u = data.get('u') or request.form.get('u')
+    v = data.get('v') or request.form.get('v')
+    if candidate not in ('Codex', 'Claude') or not u or not v:
+        return jsonify({"status": "error", "message": "Invalid submission"}), 400
+    puzzle = (int(u), int(v))
+    if candidate == 'Codex':
+        votes.append((puzzle, lhtlp.PGen(0)))
+    else:
+        votes.append((lhtlp.PGen(0), puzzle))
+    return jsonify({"status": "success", "total_votes": len(votes)})
+
+
 @app.route('/start_tally', methods=['POST'])
 def start_tally():
-    global is_solving, progress_msg
-    if not is_solving and votes:
-        is_solving = True
-        htlp.current_iteration = 0
-        solve_progress["Codex"] = 0
-        solve_progress["Claude"] = 0
-        progress_msg = "Homomorphically adding puzzles..."
-        threading.Thread(target=run_tally).start()
+    global vote_solving, vote_progress_msg
+    if not vote_solving and votes:
+        vote_solving = True
+        vote_progress['Codex'] = 0
+        vote_progress['Claude'] = 0
+        vote_progress_msg = "Homomorphically combining puzzles..."
+        threading.Thread(target=run_tally, daemon=True).start()
     return jsonify({"status": "started"})
+
 
 @app.route('/status')
 def status():
-    if results:
-        codex_pct = 100.0
-        claude_pct = 100.0
-        remaining_seconds = 0.0
-    elif is_solving and htlp.T:
-        codex_frac = min(1.0, solve_progress["Codex"] / htlp.T)
-        claude_frac = min(1.0, solve_progress["Claude"] / htlp.T)
-        codex_pct = codex_frac * 100.0
-        claude_pct = claude_frac * 100.0
-        remaining_seconds = ((1.0 - codex_frac) + (1.0 - claude_frac)) * target_per_puzzle
+    if vote_results:
+        codex_pct = claude_pct = 100.0
+        remaining = 0.0
+    elif vote_solving and lhtlp.T:
+        codex_pct = min(100.0, vote_progress['Codex'] / lhtlp.T * 100)
+        claude_pct = min(100.0, vote_progress['Claude'] / lhtlp.T * 100)
+        remaining = ((1.0 - codex_pct / 100) + (1.0 - claude_pct / 100)) * (target_seconds / 2)
     else:
-        codex_pct = 0.0
-        claude_pct = 0.0
-        remaining_seconds = float(target_total_seconds)
-
-    combined = (codex_pct + claude_pct) / 2.0
-
+        codex_pct = claude_pct = 0.0
+        remaining = float(target_seconds)
     return jsonify({
-        "solving": is_solving,
-        "results": results,
+        "solving": vote_solving,
+        "results": vote_results,
         "votes": len(votes),
-        "message": progress_msg,
-        "progress": round(combined, 2),
+        "message": vote_progress_msg,
+        "progress": round((codex_pct + claude_pct) / 2, 2),
         "codex_progress": round(codex_pct, 2),
         "claude_progress": round(claude_pct, 2),
-        "target_per_puzzle": target_per_puzzle,
-        "target_total": target_total_seconds,
-        "remaining_seconds": round(remaining_seconds, 2),
+        "target_per_puzzle": target_seconds // 2,
+        "target_total": target_seconds,
+        "remaining_seconds": round(remaining, 2),
     })
 
+
+@app.route('/reset_vote', methods=['POST'])
+def reset_vote():
+    global votes, vote_solving, vote_results, vote_progress_msg
+    votes.clear()
+    vote_solving = False
+    vote_results = None
+    vote_progress['Codex'] = 0
+    vote_progress['Claude'] = 0
+    vote_progress_msg = "Waiting for votes..."
+    return jsonify({"status": "reset"})
+
+
 def run_tally():
-    global results, is_solving, progress_msg
-
-    codex_eval = htlp.PEval([v[0] for v in votes])
-    claude_eval = htlp.PEval([v[1] for v in votes])
-
-    progress_msg = f"Solving time-lock for Codex ({per_puzzle_label})..."
-    codex_total = htlp.PSolve(
+    global vote_results, vote_solving, vote_progress_msg
+    codex_eval = lhtlp.PEval([v[0] for v in votes])
+    claude_eval = lhtlp.PEval([v[1] for v in votes])
+    vote_progress_msg = f"Solving Codex time-lock ({per_puzzle_label})..."
+    codex_total = lhtlp.PSolve(
         codex_eval,
-        progress_cb=lambda n: solve_progress.update({"Codex": n}),
+        progress_cb=lambda n: vote_progress.update({"Codex": n}),
     )
-
-    progress_msg = f"Solving time-lock for Claude ({per_puzzle_label})..."
-    claude_total = htlp.PSolve(
+    vote_progress_msg = f"Solving Claude time-lock ({per_puzzle_label})..."
+    claude_total = lhtlp.PSolve(
         claude_eval,
-        progress_cb=lambda n: solve_progress.update({"Claude": n}),
+        progress_cb=lambda n: vote_progress.update({"Claude": n}),
     )
+    vote_results = {"Codex": codex_total, "Claude": claude_total}
+    vote_progress_msg = "Tally complete!"
+    vote_solving = False
 
-    results = {"Codex": codex_total, "Claude": claude_total}
-    progress_msg = "Tally complete!"
-    is_solving = False
+
+# ── Flip endpoints ─────────────────────────────────────────
+
+@app.route('/flip', methods=['POST'])
+def submit_flip():
+    if flip_solving:
+        return jsonify({"status": "error", "message": "Flip phase is closed!"}), 400
+    data = request.get_json(silent=True) or {}
+    u = data.get('u')
+    v = data.get('v')
+    if not u or not v:
+        return jsonify({"status": "error", "message": "Missing puzzle"}), 400
+    flip_puzzles.append((int(u), int(v)))
+    return jsonify({"status": "success", "participants": len(flip_puzzles)})
+
+
+@app.route('/start_flip', methods=['POST'])
+def start_flip():
+    global flip_solving, flip_progress_msg
+    if not flip_solving and flip_puzzles:
+        flip_solving = True
+        flip_progress_msg = "Homomorphically combining puzzles..."
+        threading.Thread(target=run_flip, daemon=True).start()
+    return jsonify({"status": "started"})
+
+
+@app.route('/flip-status')
+def flip_status():
+    if flip_result is not None:
+        pct = 100.0
+        remaining = 0.0
+    elif flip_solving and mhtlp.T:
+        pct = min(100.0, flip_progress / mhtlp.T * 100)
+        remaining = (1.0 - pct / 100) * (target_seconds / 2)
+    else:
+        pct = 0.0
+        remaining = float(target_seconds / 2)
+    return jsonify({
+        "solving": flip_solving,
+        "result": flip_result,
+        "participants": len(flip_puzzles),
+        "message": flip_progress_msg,
+        "progress": round(pct, 2),
+        "remaining_seconds": round(remaining, 2),
+        "individual_bits": flip_bits if flip_result is not None else [],
+    })
+
+
+@app.route('/reset_flip', methods=['POST'])
+def reset_flip():
+    global flip_puzzles, flip_bits, flip_solving, flip_result, flip_progress, flip_progress_msg
+    flip_puzzles.clear()
+    flip_bits.clear()
+    flip_solving = False
+    flip_result = None
+    flip_progress = 0
+    flip_progress_msg = "Waiting for participants..."
+    return jsonify({"status": "reset"})
+
+
+def run_flip():
+    global flip_result, flip_solving, flip_progress_msg, flip_progress, flip_bits
+    combined = mhtlp.PEval(flip_puzzles)
+    flip_progress_msg = f"Solving coin-flip time-lock ({per_puzzle_label})..."
+
+    def on_progress(n):
+        global flip_progress
+        flip_progress = n
+
+    bit = mhtlp.PSolve(combined, progress_cb=on_progress)
+    flip_result = {"bit": bit, "face": "heads" if bit == 1 else "tails"}
+    flip_progress_msg = "Coin flipped!"
+    flip_solving = False
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-
-#ngrok http --url=marley-choleric-leigh.ngrok-free.dev 5000
