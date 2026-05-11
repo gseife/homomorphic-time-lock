@@ -1,6 +1,3 @@
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-
 import pytest
 from Demo.htlp import LHTLP, MHTLP
 
@@ -90,6 +87,12 @@ def test_mhtlp_peval_xor_different_bits(mhtlp):
     assert mhtlp.PSolve(combined) == 1
 
 
+def test_mhtlp_peval_xor_one_then_zero(mhtlp):
+    # 1 XOR 0 = 1
+    combined = mhtlp.PEval([mhtlp.PGen(1), mhtlp.PGen(0)])
+    assert mhtlp.PSolve(combined) == 1
+
+
 def test_mhtlp_peval_xor_three_bits(mhtlp):
     # 1 XOR 1 XOR 1 = 1
     combined = mhtlp.PEval([mhtlp.PGen(1), mhtlp.PGen(1), mhtlp.PGen(1)])
@@ -105,3 +108,4 @@ def test_mhtlp_peval_xor_even_ones_is_zero(mhtlp):
 def test_mhtlp_public_params_has_required_keys(mhtlp):
     pp = mhtlp.public_params()
     assert set(pp.keys()) == {"N", "g", "h", "T"}
+    assert all(isinstance(v, str) or isinstance(v, int) for v in pp.values())
