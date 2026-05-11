@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTLP — E-Voting</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    :root {
+      --bg: #faf6ed; --card: #ffffff; --accent: #4a7a8c; --accent2: #5fa18f;
+      --accent3: #d4795f; --text: #1d2538; --dim: #6b7280; --border: #e7e0cf;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Inter',sans-serif; background:
+        radial-gradient(circle at 92% 8%, rgba(244,200,184,.55) 0%, transparent 32%),
+        radial-gradient(circle at 4% 38%, rgba(200,230,221,.55) 0%, transparent 28%),
+        var(--bg);
+      color:var(--text); min-height:100vh; display:flex;
+      align-items:center; justify-content:center; padding:24px 18px;
+    }
+    .container { width:100%; max-width:480px; text-align:center; }
+    .back { font-size:13px; color:var(--dim); text-decoration:none; display:block; margin-bottom:16px; }
+    .back:hover { color:var(--accent); }
+    h1 {
+      font-size:36px; font-weight:700;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text; margin-bottom:8px;
+    }
+    .subtitle { font-size:15px; color:var(--dim); font-weight:300; margin-bottom:26px; line-height:1.5; }
+    .card {
+      background:var(--card); border:1px solid #d4cdb8; border-radius:14px;
+      padding:28px 22px; box-shadow:0 1px 2px rgba(29,37,56,.06),0 6px 18px rgba(29,37,56,.07);
+    }
+    .prompt { font-size:17px; color:var(--text); margin-bottom:4px; font-weight:500; }
+    .candidate-buttons { display:flex; flex-direction:column; gap:14px; margin:18px 0 8px; }
+    button.candidate-btn {
+      font-family:'Inter',sans-serif; font-size:21px; font-weight:600;
+      padding:20px 26px; border-radius:12px; border:2px solid; cursor:pointer;
+      background:var(--card); transition:transform .15s,box-shadow .15s,background .15s;
+    }
+    button.candidate-btn:disabled { opacity:.5; cursor:not-allowed; }
+    button.codex { color:var(--accent3); border-color:var(--accent3); }
+    button.codex:hover:not(:disabled) {
+      background:rgba(212,121,95,.12); transform:translateY(-2px);
+      box-shadow:0 6px 16px rgba(212,121,95,.25);
+    }
+    button.claude { color:var(--accent); border-color:var(--accent); }
+    button.claude:hover:not(:disabled) {
+      background:rgba(74,122,140,.12); transform:translateY(-2px);
+      box-shadow:0 6px 16px rgba(74,122,140,.25);
+    }
+    .info { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dim); margin-top:16px; line-height:1.6; }
+    .status-card { display:none; flex-direction:column; align-items:center; gap:14px; padding:8px 0; }
+    .status-card.visible { display:flex; }
+    .status-icon {
+      width:68px; height:68px; border-radius:50%; display:flex;
+      align-items:center; justify-content:center; font-size:34px;
+    }
+    .status-icon.encrypting {
+      background:rgba(74,122,140,.18); color:var(--accent);
+      border:2px solid var(--accent); animation:pulse 1.5s ease-in-out infinite;
+    }
+    .status-icon.success { background:rgba(95,161,143,.18); color:var(--accent2); border:2px solid var(--accent2); }
+    .status-icon.error   { background:rgba(212,121,95,.18); color:var(--accent3); border:2px solid var(--accent3); }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.95)} }
+    .status-title { font-size:21px; font-weight:600; }
+    .status-msg   { font-size:14px; color:var(--dim); line-height:1.5; max-width:320px; }
+    .status-msg strong { color:var(--text); }
+    .voted-pill {
+      display:inline-block; padding:7px 20px; border-radius:999px;
+      font-weight:700; font-size:15px; text-transform:uppercase;
+    }
+    .voted-pill.codex { background:rgba(212,121,95,.18); color:var(--accent3); }
+    .voted-pill.claude { background:rgba(74,122,140,.18); color:var(--accent); }
+    details { margin-top:14px; text-align:left; }
+    summary { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); cursor:pointer; }
+    .tech-box {
+      font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim);
+      background:#f5f2ea; border:1px solid var(--border); border-radius:6px;
+      padding:10px; margin-top:6px; word-break:break-all; line-height:1.7;
+    }
+    .live-counter {
+      margin-top:22px; font-family:'JetBrains Mono',monospace;
+      font-size:13px; color:var(--dim); display:flex;
+      align-items:center; justify-content:center; gap:8px;
+    }
+    .live-counter .count { color:var(--accent2); font-weight:700; font-size:18px; }
+    .dot { width:9px; height:9px; border-radius:50%; background:var(--accent2); animation:blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+    .footer { margin-top:18px; font-size:11px; color:var(--dim); font-family:'JetBrains Mono',monospace; opacity:.7; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="/">&#8592; back to demos</a>
+    <h1>Cast Your Vote</h1>
+    <p class="subtitle">Your ballot is locked in a homomorphic time-lock puzzle &mdash; secret until time T elapses.</p>
+
+    <div class="card">
+      <div id="booth">
+        <p class="prompt">Choose your candidate</p>
+        <div class="candidate-buttons">
+          <button class="candidate-btn codex"  onclick="vote('Codex')" disabled>Vote Codex</button>
+          <button class="candidate-btn claude" onclick="vote('Claude')" disabled>Vote Claude</button>
+        </div>
+        <p class="info">Your puzzle is generated in this browser.<br>The server never sees your choice.</p>
+      </div>
+
+      <div id="status-card" class="status-card">
+        <div id="status-icon" class="status-icon encrypting">&#128274;</div>
+        <p id="status-title" class="status-title">Encrypting&hellip;</p>
+        <p id="status-msg" class="status-msg">Generating time-lock puzzle locally.</p>
+        <div id="voted-pill" style="display:none"></div>
+        <details id="tech-detail" style="display:none">
+          <summary>technical detail</summary>
+          <div class="tech-box" id="tech-box"></div>
+        </details>
+      </div>
+    </div>
+
+    <div class="live-counter">
+      <span class="dot"></span>
+      Live: <span id="live-count" class="count">0</span> ballots encrypted
+    </div>
+    <p class="footer">Secure &amp; Private Computing &middot; HTLP Demo</p>
+  </div>
+
+  <script src="/static/htlp.js"></script>
+  <script>
+    let pp = null;
+
+    async function init() {
+      pp = await HTLP.fetchParams('/vote-params');
+      document.querySelectorAll('.candidate-btn').forEach(b => b.disabled = false);
+    }
+    init();
+
+    async function vote(candidate) {
+      document.getElementById('booth').style.display = 'none';
+      const card = document.getElementById('status-card');
+      card.classList.add('visible');
+      setStatus('encrypting', 'Generating puzzle…', 'Computing time-lock puzzle in your browser.');
+
+      const s = 1;
+      const puzzle = HTLP.lhtlpPGen(pp, s);
+
+      const payload = { candidate, u: puzzle.u, v: puzzle.v };
+      let data;
+      try {
+        const res = await fetch('/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        data = await res.json();
+      } catch {
+        setStatus('error', 'Network error', 'Could not reach the server. Please try again.');
+        setTimeout(() => { card.classList.remove('visible'); document.getElementById('booth').style.display=''; }, 3000);
+        return;
+      }
+
+      if (data.status === 'success') {
+        setStatus('success', 'Vote locked!',
+          `Your ballot was encrypted as <strong>#${data.total_votes}</strong>.<br>Watch the screen for the reveal.`);
+        const pill = document.getElementById('voted-pill');
+        pill.className = 'voted-pill ' + candidate.toLowerCase();
+        pill.textContent = 'You voted ' + candidate;
+        pill.style.display = 'inline-block';
+        document.getElementById('live-count').textContent = data.total_votes;
+        document.getElementById('tech-box').textContent =
+          `u = ${puzzle.u.slice(0,40)}…\nv = ${puzzle.v.slice(0,40)}…`;
+        document.getElementById('tech-detail').style.display = 'block';
+      } else {
+        setStatus('error', 'Vote rejected', data.message || 'Voting may be closed.');
+        setTimeout(() => { card.classList.remove('visible'); document.getElementById('booth').style.display=''; }, 3000);
+      }
+    }
+
+    function setStatus(state, title, msg) {
+      const icon = document.getElementById('status-icon');
+      icon.className = 'status-icon ' + state;
+      icon.textContent = state === 'encrypting' ? '🔒' : state === 'success' ? '✓' : '!';
+      document.getElementById('status-title').textContent = title;
+      document.getElementById('status-msg').innerHTML = msg;
+    }
+
+    setInterval(async () => {
+      try {
+        const d = await (await fetch('/status')).json();
+        document.getElementById('live-count').textContent = d.votes;
+      } catch {}
+    }, 2000);
+  </script>
+</body>
+</html>

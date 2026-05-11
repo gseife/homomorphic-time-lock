@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTLP &mdash; Coin Flip</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    :root {
+      --bg:#f4f0e8; --card:#ffffff; --gold:#c8961e; --silver:#7a8c99;
+      --accent:#4a7a8c; --accent2:#5fa18f; --text:#1d2538; --dim:#6b7280; --border:#e7e0cf;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Inter',sans-serif;
+      background:
+        radial-gradient(circle at 80% 10%, rgba(200,150,30,.18) 0%, transparent 35%),
+        radial-gradient(circle at 10% 80%, rgba(95,161,143,.25) 0%, transparent 30%),
+        var(--bg);
+      color:var(--text); min-height:100vh;
+      display:flex; align-items:center; justify-content:center; padding:24px 18px;
+    }
+    .container { width:100%; max-width:420px; text-align:center; }
+    .back { font-size:13px; color:var(--dim); text-decoration:none; display:block; margin-bottom:16px; }
+    .back:hover { color:var(--accent); }
+    h1 {
+      font-size:36px; font-weight:700;
+      background:linear-gradient(135deg,var(--gold),var(--accent2));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text; margin-bottom:8px;
+    }
+    .subtitle { font-size:15px; color:var(--dim); font-weight:300; margin-bottom:28px; line-height:1.5; }
+
+    /* ── Coin ───────────────────────────────────────── */
+    .coin-scene { width:160px; height:160px; perspective:600px; margin:0 auto 28px; }
+    .coin {
+      width:160px; height:160px; position:relative;
+      transform-style:preserve-3d; transition:transform 0.1s;
+    }
+    .coin.spinning { animation:spin-coin 1.2s linear infinite; }
+    .coin.landing  { animation:land-coin 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
+    @keyframes spin-coin {
+      from { transform:rotateY(0deg); }
+      to   { transform:rotateY(360deg); }
+    }
+    @keyframes land-coin {
+      0%   { transform:rotateY(0deg); }
+      60%  { transform:rotateY(1440deg); }
+      80%  { transform:rotateY(1800deg) rotateX(10deg); }
+      90%  { transform:rotateY(1798deg) rotateX(-4deg); }
+      100% { transform:rotateY(1800deg); }
+    }
+    .coin-face {
+      position:absolute; width:160px; height:160px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:60px; font-weight:900; backface-visibility:hidden;
+      border:4px solid;
+    }
+    .coin-face.heads {
+      background:radial-gradient(circle at 40% 35%, #f5d87a, #c8961e);
+      border-color:#a07010; color:#7a4a00; transform:rotateY(0deg);
+    }
+    .coin-face.tails {
+      background:radial-gradient(circle at 40% 35%, #d0dde6, #7a8c99);
+      border-color:#4a6070; color:#2a3a50; transform:rotateY(180deg);
+    }
+    .coin-face.edge {
+      background:linear-gradient(90deg, #c8961e, #7a8c99);
+      border-color:#888; color:transparent; transform:rotateY(90deg);
+    }
+
+    /* ── Card ───────────────────────────────────────── */
+    .card {
+      background:var(--card); border:1px solid #d4cdb8; border-radius:14px;
+      padding:28px 22px; box-shadow:0 1px 2px rgba(29,37,56,.06),0 6px 18px rgba(29,37,56,.08);
+    }
+    #flip-btn {
+      font-family:'Inter',sans-serif; font-size:22px; font-weight:700;
+      padding:22px 36px; border-radius:12px; border:2px solid var(--gold);
+      background:var(--card); color:var(--gold); cursor:pointer;
+      transition:transform .15s, box-shadow .15s, background .15s;
+      width:100%;
+    }
+    #flip-btn:hover:not(:disabled) {
+      background:rgba(200,150,30,.1); transform:translateY(-2px);
+      box-shadow:0 6px 16px rgba(200,150,30,.3);
+    }
+    #flip-btn:disabled { opacity:.45; cursor:not-allowed; }
+    .info { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dim); margin-top:16px; line-height:1.6; }
+
+    #confirm-view { display:none; flex-direction:column; align-items:center; gap:10px; }
+    .confirm-msg { font-size:15px; color:var(--text); font-weight:500; }
+    .confirm-sub  { font-size:13px; color:var(--dim); line-height:1.5; }
+
+    details { margin-top:14px; text-align:left; }
+    summary { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); cursor:pointer; }
+    .tech-box {
+      font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim);
+      background:#f5f2ea; border:1px solid var(--border); border-radius:6px;
+      padding:10px; margin-top:6px; word-break:break-all; line-height:1.7;
+    }
+    .live-counter {
+      margin-top:22px; font-family:'JetBrains Mono',monospace;
+      font-size:13px; color:var(--dim); display:flex;
+      align-items:center; justify-content:center; gap:8px;
+    }
+    .live-counter .count { color:var(--accent2); font-weight:700; font-size:18px; }
+    .dot { width:9px; height:9px; border-radius:50%; background:var(--accent2); animation:blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+    .footer { margin-top:18px; font-size:11px; color:var(--dim); font-family:'JetBrains Mono',monospace; opacity:.7; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="/">&#8592; back to demos</a>
+    <h1>Coin Flip</h1>
+    <p class="subtitle">Your secret bit is locked in a multiplicative time-lock puzzle &mdash; the XOR of everyone&rsquo;s bits is revealed only after time T.</p>
+
+    <!-- Coin -->
+    <div class="coin-scene">
+      <div class="coin" id="coin">
+        <div class="coin-face heads">H</div>
+        <div class="coin-face tails">T</div>
+        <div class="coin-face edge"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="entry-view">
+        <button id="flip-btn" onclick="submitFlip()" disabled>Add my secret</button>
+        <p class="info">Your browser picks a random bit and generates<br>an MHTLP puzzle locally. No bit sent to server.</p>
+      </div>
+
+      <div id="confirm-view">
+        <p class="confirm-msg">&#10003; Your secret is locked.</p>
+        <p class="confirm-sub">You&rsquo;ll find out what it was after the coin lands.<br>Watch the screen for the reveal.</p>
+        <details>
+          <summary>technical detail</summary>
+          <div class="tech-box" id="tech-box"></div>
+        </details>
+      </div>
+    </div>
+
+    <div class="live-counter">
+      <span class="dot"></span>
+      <span id="live-count" class="count">0</span> secrets committed
+    </div>
+    <p class="footer">Secure &amp; Private Computing &middot; HTLP Demo</p>
+  </div>
+
+  <script src="/static/htlp.js"></script>
+  <script>
+    let pp = null;
+
+    async function init() {
+      pp = await HTLP.fetchParams('/flip-params');
+      document.getElementById('flip-btn').disabled = false;
+    }
+    init();
+
+    async function submitFlip() {
+      document.getElementById('flip-btn').disabled = true;
+
+      const randByte = new Uint8Array(1);
+      crypto.getRandomValues(randByte);
+      const bit = randByte[0] & 1;
+
+      const puzzle = HTLP.mhtlpPGen(pp, bit);
+
+      let data;
+      try {
+        const res = await fetch('/flip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ u: puzzle.u, v: puzzle.v }),
+        });
+        data = await res.json();
+      } catch {
+        alert('Network error — please try again.');
+        document.getElementById('flip-btn').disabled = false;
+        return;
+      }
+
+      if (data.status === 'success') {
+        document.getElementById('entry-view').style.display = 'none';
+        const cv = document.getElementById('confirm-view');
+        cv.style.display = 'flex';
+        document.getElementById('live-count').textContent = data.participants;
+        document.getElementById('tech-box').textContent =
+          `bit = ${bit} (${bit === 1 ? 'Heads' : 'Tails'} — revealed after solve)\nu = ${puzzle.u.slice(0,40)}…\nv = ${puzzle.v.slice(0,40)}…`;
+      }
+    }
+
+    setInterval(async () => {
+      try {
+        const d = await (await fetch('/flip-status')).json();
+        document.getElementById('live-count').textContent = d.participants;
+      } catch {}
+    }, 2000);
+  </script>
+</body>
+</html>

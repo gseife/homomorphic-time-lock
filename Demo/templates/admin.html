@@ -1,62 +1,248 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>HTLP Demo Admin</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
-        .dashboard { background: white; padding: 40px; border-radius: 10px; display: inline-block; box-shadow: 0px 0px 15px rgba(0,0,0,0.1); min-width: 400px; }
-        button { font-size: 18px; padding: 10px 20px; background-color: #d9534f; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        #results { font-size: 28px; color: #333; margin-top: 20px; font-weight: bold; }
-        
-        /* --- NEW: Progress Bar Styling --- */
-        #progress-container { width: 100%; background-color: #e0e0e0; border-radius: 5px; margin-top: 20px; display: none; overflow: hidden; }
-        #progress-bar { width: 0%; height: 35px; background-color: #4CAF50; text-align: center; line-height: 35px; color: white; font-weight: bold; transition: width 0.5s; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTLP Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    :root {
+      --bg:#0f1117; --card:#1a1d26; --border:#2a2d3a; --accent:#4a9ab5;
+      --accent2:#5fa18f; --gold:#c8961e; --silver:#7a8c99;
+      --text:#e8eaf0; --dim:#6b7280; --green:#4ade80; --red:#f87171;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px; }
+    h1 { font-size:22px; font-weight:700; color:var(--text); margin-bottom:4px; }
+    .subtitle { font-size:13px; color:var(--dim); font-family:'JetBrains Mono',monospace; margin-bottom:24px; }
+    .panels { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media (max-width:700px) { .panels { grid-template-columns:1fr; } }
+    .panel {
+      background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px;
+    }
+    .panel-title { font-size:17px; font-weight:700; margin-bottom:4px; }
+    .panel.vote .panel-title { color:var(--accent); }
+    .panel.flip .panel-title { color:var(--gold); }
+    .tag {
+      display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px;
+      border-radius:4px; padding:2px 7px; margin-bottom:16px;
+    }
+    .panel.vote .tag { background:rgba(74,154,181,.15); color:var(--accent); }
+    .panel.flip .tag { background:rgba(200,150,30,.15); color:var(--gold); }
+    .stat { margin-bottom:16px; }
+    .stat-label { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.5px; font-family:'JetBrains Mono',monospace; }
+    .stat-value { font-size:32px; font-weight:700; line-height:1.1; }
+    .phase {
+      display:inline-flex; align-items:center; gap:6px;
+      font-family:'JetBrains Mono',monospace; font-size:12px;
+      border:1px solid var(--border); border-radius:6px; padding:4px 10px; margin-bottom:16px;
+    }
+    .phase-dot { width:7px; height:7px; border-radius:50%; }
+    .phase-dot.open    { background:var(--green); animation:blink .8s ease-in-out infinite; }
+    .phase-dot.solving { background:var(--gold);  animation:blink .8s ease-in-out infinite; }
+    .phase-dot.done    { background:var(--accent2); }
+    @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+    .progress-wrap { background:#2a2d3a; border-radius:6px; height:8px; margin-bottom:16px; overflow:hidden; }
+    .progress-bar  { height:100%; border-radius:6px; transition:width .5s; }
+    .panel.vote .progress-bar { background:var(--accent); }
+    .panel.flip .progress-bar { background:var(--gold); }
+    .msg { font-size:12px; color:var(--dim); font-family:'JetBrains Mono',monospace; margin-bottom:16px; min-height:16px; }
+    .btn {
+      font-family:'Inter',sans-serif; font-size:14px; font-weight:600;
+      padding:10px 18px; border-radius:8px; border:none; cursor:pointer;
+      margin-right:8px; margin-bottom:8px; transition:opacity .15s;
+    }
+    .btn:hover { opacity:.85; }
+    .btn:disabled { opacity:.35; cursor:not-allowed; }
+    .btn-solve { background:var(--accent); color:#fff; }
+    .btn-flip  { background:var(--gold);   color:#fff; }
+    .btn-reset { background:var(--border); color:var(--dim); }
+    .results { font-size:14px; line-height:1.8; }
+    .result-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
+    .result-row:last-child { border-bottom:none; }
+    .winner { color:var(--green); font-weight:700; }
+
+    /* Coin */
+    .coin-wrap { display:flex; justify-content:center; margin:16px 0; }
+    .coin-scene { width:90px; height:90px; perspective:400px; }
+    .coin {
+      width:90px; height:90px; position:relative;
+      transform-style:preserve-3d;
+    }
+    .coin.spinning { animation:spin-coin 1.2s linear infinite; }
+    .coin.landing  { animation:land-coin 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
+    @keyframes spin-coin { from{transform:rotateY(0deg)} to{transform:rotateY(360deg)} }
+    @keyframes land-coin {
+      0%  {transform:rotateY(0deg)}
+      60% {transform:rotateY(1440deg)}
+      80% {transform:rotateY(1800deg) rotateX(8deg)}
+      90% {transform:rotateY(1798deg) rotateX(-3deg)}
+      100%{transform:rotateY(1800deg)}
+    }
+    .coin-face {
+      position:absolute; width:90px; height:90px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:34px; font-weight:900; backface-visibility:hidden; border:3px solid;
+    }
+    .coin-face.heads {
+      background:radial-gradient(circle at 40% 35%,#f5d87a,#c8961e);
+      border-color:#a07010; color:#7a4a00; transform:rotateY(0deg);
+    }
+    .coin-face.tails {
+      background:radial-gradient(circle at 40% 35%,#d0dde6,#7a8c99);
+      border-color:#4a6070; color:#2a3a50; transform:rotateY(180deg);
+    }
+    .flip-result { font-size:24px; font-weight:800; text-align:center; }
+    .flip-result.heads { color:var(--gold); }
+    .flip-result.tails { color:var(--silver); }
+    .flip-sub { font-size:11px; color:var(--dim); text-align:center; font-family:'JetBrains Mono',monospace; margin-top:4px; }
+  </style>
 </head>
 <body>
-    <div class="dashboard">
-        <h1>Live Demo Dashboard</h1>
-        <h2>Total Votes Encrypted: <span id="vote-count">0</span></h2>
-        
-        <h3 id="status-msg" style="color: #555;">Waiting for votes...</h3>
-        
-        <button id="start-btn" onclick="startTally()">Close Voting & Start Solving</button>
-        
-        <div id="progress-container">
-            <div id="progress-bar">0%</div>
-        </div>
-        
-        <div id="results"></div>
+  <h1>HTLP Admin Dashboard</h1>
+  <p class="subtitle">presenter view &mdash; keep this tab open</p>
+
+  <div class="panels">
+    <!-- E-Voting Panel -->
+    <div class="panel vote">
+      <div class="panel-title">E-Voting</div>
+      <div class="tag">LHTLP &middot; Linear Homomorphic</div>
+      <div class="stat">
+        <div class="stat-label">Ballots Encrypted</div>
+        <div class="stat-value" id="vote-count">0</div>
+      </div>
+      <div class="phase" id="vote-phase">
+        <span class="phase-dot open" id="vote-dot"></span>
+        <span id="vote-phase-label">OPEN</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="vote-bar" style="width:0%"></div></div>
+      <div class="msg" id="vote-msg">Waiting for votes&hellip;</div>
+      <div id="vote-result-area"></div>
+      <button class="btn btn-solve" id="vote-solve-btn" onclick="startVote()">Close Voting &amp; Solve</button>
+      <button class="btn btn-reset" onclick="resetVote()">Reset</button>
     </div>
 
-    <script>
-        function startTally() {
-            fetch('/start_tally', { method: 'POST' });
-            document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('progress-container').style.display = 'block'; // Show progress bar
-        }
+    <!-- Coin Flip Panel -->
+    <div class="panel flip">
+      <div class="panel-title">Coin Flip</div>
+      <div class="tag">MHTLP &middot; Multiplicative XOR</div>
+      <div class="stat">
+        <div class="stat-label">Secrets Committed</div>
+        <div class="stat-value" id="flip-count">0</div>
+      </div>
+      <div class="phase" id="flip-phase">
+        <span class="phase-dot open" id="flip-dot"></span>
+        <span id="flip-phase-label">OPEN</span>
+      </div>
+      <div class="coin-wrap">
+        <div class="coin-scene">
+          <div class="coin" id="admin-coin">
+            <div class="coin-face heads">H</div>
+            <div class="coin-face tails">T</div>
+          </div>
+        </div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="flip-bar" style="width:0%"></div></div>
+      <div class="msg" id="flip-msg">Waiting for participants&hellip;</div>
+      <div id="flip-result-area"></div>
+      <button class="btn btn-flip" id="flip-solve-btn" onclick="startFlip()">Close Flip &amp; Solve</button>
+      <button class="btn btn-reset" onclick="resetFlip()">Reset</button>
+    </div>
+  </div>
 
-        function pollStatus() {
-            fetch('/status').then(res => res.json()).then(data => {
-                document.getElementById('vote-count').innerText = data.votes;
-                document.getElementById('status-msg').innerText = data.message;
-                
-                // NEW: Update the progress bar width and text
-                if (data.solving || data.results) {
-                    document.getElementById('progress-container').style.display = 'block';
-                    const pctRounded = Math.round(data.progress);
-                    document.getElementById('progress-bar').style.width = data.progress + "%";
-                    document.getElementById('progress-bar').innerText = pctRounded + "%";
-                }
-                
-                if(data.results) {
-                    document.getElementById('results').innerHTML = 
-                        `<p>🎉 Codex: ${data.results.Codex} votes</p>
-                         <p>🎉 Claude: ${data.results.Claude} votes</p>`;
-                }
-            });
+  <script>
+    // ── Voting ───────────────────────────────────────────
+    async function startVote() {
+      await fetch('/start_tally', { method:'POST' });
+      document.getElementById('vote-solve-btn').disabled = true;
+    }
+    async function resetVote() {
+      await fetch('/reset_vote', { method:'POST' });
+      document.getElementById('vote-solve-btn').disabled = false;
+      document.getElementById('vote-result-area').innerHTML = '';
+      document.getElementById('vote-bar').style.width = '0%';
+      setPhase('vote', 'open');
+    }
+
+    // ── Flip ─────────────────────────────────────────────
+    let flipRevealed = false;
+    async function startFlip() {
+      await fetch('/start_flip', { method:'POST' });
+      document.getElementById('flip-solve-btn').disabled = true;
+      document.getElementById('admin-coin').className = 'coin spinning';
+    }
+    async function resetFlip() {
+      flipRevealed = false;
+      await fetch('/reset_flip', { method:'POST' });
+      document.getElementById('flip-solve-btn').disabled = false;
+      document.getElementById('flip-result-area').innerHTML = '';
+      document.getElementById('flip-bar').style.width = '0%';
+      document.getElementById('admin-coin').className = 'coin';
+      setPhase('flip', 'open');
+    }
+
+    function setPhase(demo, phase) {
+      const dot   = document.getElementById(demo + '-dot');
+      const label = document.getElementById(demo + '-phase-label');
+      dot.className   = 'phase-dot ' + phase;
+      label.textContent = phase.toUpperCase();
+    }
+
+    // ── Poll ─────────────────────────────────────────────
+    async function pollVote() {
+      try {
+        const d = await (await fetch('/status')).json();
+        document.getElementById('vote-count').textContent = d.votes;
+        document.getElementById('vote-msg').textContent   = d.message;
+        document.getElementById('vote-bar').style.width   = d.progress + '%';
+        if (d.solving) setPhase('vote', 'solving');
+        if (d.results) {
+          setPhase('vote', 'done');
+          const r = d.results;
+          const winner = r.Codex > r.Claude ? 'Codex' : r.Claude > r.Codex ? 'Claude' : null;
+          document.getElementById('vote-result-area').innerHTML = `
+            <div class="results">
+              <div class="result-row">
+                <span>Codex</span>
+                <span class="${winner === 'Codex' ? 'winner' : ''}">${r.Codex} vote${r.Codex !== 1 ? 's' : ''} ${winner === 'Codex' ? '🏆' : ''}</span>
+              </div>
+              <div class="result-row">
+                <span>Claude</span>
+                <span class="${winner === 'Claude' ? 'winner' : ''}">${r.Claude} vote${r.Claude !== 1 ? 's' : ''} ${winner === 'Claude' ? '🏆' : ''}</span>
+              </div>
+              ${winner === null ? '<div class="result-row" style="color:var(--gold)">Tie!</div>' : ''}
+            </div>`;
         }
-        setInterval(pollStatus, 1500); // Check server slightly faster for smoother progress updates
-    </script>
+      } catch {}
+    }
+
+    async function pollFlip() {
+      try {
+        const d = await (await fetch('/flip-status')).json();
+        document.getElementById('flip-count').textContent = d.participants;
+        document.getElementById('flip-msg').textContent   = d.message;
+        document.getElementById('flip-bar').style.width   = d.progress + '%';
+        if (d.solving) setPhase('flip', 'solving');
+        if (d.result && !flipRevealed) {
+          flipRevealed = true;
+          setPhase('flip', 'done');
+          const face = d.result.face;
+          const coin = document.getElementById('admin-coin');
+          coin.className = 'coin landing';
+          setTimeout(() => {
+            const label = face === 'heads' ? 'Heads &mdash; 1' : 'Tails &mdash; 0';
+            document.getElementById('flip-result-area').innerHTML = `
+              <div class="flip-result ${face}">${label}</div>
+              <div class="flip-sub">XOR of ${d.participants} secret bit${d.participants !== 1 ? 's' : ''}</div>`;
+          }, 1400);
+        }
+      } catch {}
+    }
+
+    setInterval(pollVote, 1500);
+    setInterval(pollFlip, 1500);
+    pollVote();
+    pollFlip();
+  </script>
 </body>
 </html>
