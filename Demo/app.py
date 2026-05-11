@@ -66,7 +66,6 @@ vote_progress = {"Codex": 0, "Claude": 0}
 
 # --- Flip state ---
 flip_puzzles = []
-flip_bits = []       # revealed after solve
 flip_solving = False
 flip_result = None
 flip_progress = 0
@@ -239,15 +238,13 @@ def flip_status():
         "message": flip_progress_msg,
         "progress": round(pct, 2),
         "remaining_seconds": round(remaining, 2),
-        "individual_bits": flip_bits if flip_result is not None else [],
     })
 
 
 @app.route('/reset_flip', methods=['POST'])
 def reset_flip():
-    global flip_puzzles, flip_bits, flip_solving, flip_result, flip_progress, flip_progress_msg
+    global flip_puzzles, flip_solving, flip_result, flip_progress, flip_progress_msg
     flip_puzzles.clear()
-    flip_bits.clear()
     flip_solving = False
     flip_result = None
     flip_progress = 0
@@ -256,7 +253,7 @@ def reset_flip():
 
 
 def run_flip():
-    global flip_result, flip_solving, flip_progress_msg, flip_progress, flip_bits
+    global flip_result, flip_solving, flip_progress_msg, flip_progress
     combined = mhtlp.PEval(flip_puzzles)
     flip_progress_msg = f"Solving coin-flip time-lock ({per_puzzle_label})..."
 
