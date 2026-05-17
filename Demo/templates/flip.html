@@ -121,6 +121,20 @@
     .dot { width:9px; height:9px; border-radius:50%; background:var(--accent2); animation:blink 2s ease-in-out infinite; }
     @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
     .footer { margin-top:18px; font-size:11px; color:var(--dim); font-family:'JetBrains Mono',monospace; opacity:.7; }
+
+    /* ── Generation log ─────────────────────────────── */
+    #gen-log {
+      display:none; margin-top:18px; text-align:left;
+      background:#1a1f2e; border:1px solid #2e3650; border-radius:10px;
+      padding:14px 16px; font-family:'JetBrains Mono',monospace; font-size:11.5px;
+      line-height:1.85; min-height:56px;
+    }
+    #gen-log .log-line { display:flex; gap:8px; opacity:0; animation:fade-in .25s forwards; }
+    @keyframes fade-in { to { opacity:1; } }
+    #gen-log .tag-browser { color:#5fa18f; font-weight:700; flex-shrink:0; }
+    #gen-log .tag-network { color:#c8961e; font-weight:700; flex-shrink:0; }
+    #gen-log .tag-ok      { color:#6ec97a; font-weight:700; flex-shrink:0; }
+    #gen-log .log-text    { color:#a8b4c8; word-break:break-all; }
   </style>
 </head>
 <body>
@@ -155,6 +169,8 @@
       </div>
     </div>
 
+    <pre id="gen-log"></pre>
+
     <div class="live-counter">
       <span class="dot"></span>
       <span id="live-count" class="count">0</span> secrets committed
@@ -172,16 +188,34 @@
     }
     init();
 
+    function appendLog(tag, tagClass, text) {
+      const log = document.getElementById('gen-log');
+      log.style.display = 'block';
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.innerHTML = `<span class="${tagClass}">${tag}</span><span class="log-text">${text}</span>`;
+      log.appendChild(line);
+    }
+
     async function submitFlip() {
       document.getElementById('flip-btn').disabled = true;
 
-      // Determine bit and compute puzzle before animation starts
+      // Clear previous log
+      const log = document.getElementById('gen-log');
+      log.innerHTML = '';
+      log.style.display = 'none';
+
+      // Step 1 — pick random bit in browser
       const randByte = new Uint8Array(1);
       crypto.getRandomValues(randByte);
       const bit = randByte[0] & 1;
-      const puzzle = HTLP.mhtlpPGen(pp, bit);
 
-      // Kick off server submission in parallel — don't await yet
+      // Step 2 — compute puzzle entirely in browser (record timing for log)
+      const t0 = performance.now();
+      const puzzle = HTLP.mhtlpPGen(pp, bit);
+      const ms = (performance.now() - t0).toFixed(1);
+
+      // Step 3 — send only (u, v) to server — bit stays in browser
       const submitPromise = fetch('/flip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,6 +243,12 @@
       }
 
       if (data.status === 'success') {
+        appendLog('[browser]', 'tag-browser', `crypto.getRandomValues → bit = ${bit} (${bit === 1 ? 'Heads' : 'Tails'})`);
+        appendLog('[browser]', 'tag-browser', `mhtlpPGen computed in ${ms} ms`);
+        appendLog('[browser]', 'tag-browser', `u = ${puzzle.u.slice(0,36)}…`);
+        appendLog('[browser]', 'tag-browser', `v = ${puzzle.v.slice(0,36)}…`);
+        appendLog('[network]', 'tag-network', `POST /flip  { u, v }  ← bit not included`);
+        appendLog('[network]', 'tag-ok', `✓ committed  (${data.participants} participant${data.participants === 1 ? '' : 's'})`);
         document.getElementById('entry-view').style.display = 'none';
         const cv = document.getElementById('confirm-view');
         cv.style.display = 'flex';
