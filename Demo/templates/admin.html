@@ -69,15 +69,23 @@
       width:90px; height:90px; position:relative;
       transform-style:preserve-3d;
     }
-    .coin.spinning { animation:spin-coin 1.2s linear infinite; }
-    .coin.landing  { animation:land-coin 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
+    .coin.spinning      { animation:spin-coin 1.2s linear infinite; }
+    .coin.landing-heads { animation:land-heads 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
+    .coin.landing-tails { animation:land-tails 1.4s cubic-bezier(.2,.8,.3,1) forwards; }
     @keyframes spin-coin { from{transform:rotateY(0deg)} to{transform:rotateY(360deg)} }
-    @keyframes land-coin {
+    @keyframes land-heads {
       0%  {transform:rotateY(0deg)}
       60% {transform:rotateY(1440deg)}
       80% {transform:rotateY(1800deg) rotateX(8deg)}
       90% {transform:rotateY(1798deg) rotateX(-3deg)}
       100%{transform:rotateY(1800deg)}
+    }
+    @keyframes land-tails {
+      0%  {transform:rotateY(0deg)}
+      60% {transform:rotateY(1440deg)}
+      80% {transform:rotateY(1980deg) rotateX(8deg)}
+      90% {transform:rotateY(1978deg) rotateX(-3deg)}
+      100%{transform:rotateY(1980deg)}
     }
     .coin-face {
       position:absolute; width:90px; height:90px; border-radius:50%;
@@ -228,7 +236,7 @@
           setPhase('flip', 'done');
           const face = d.result.face;
           const coin = document.getElementById('admin-coin');
-          coin.className = 'coin landing';
+          coin.className = 'coin landing-' + face;
           setTimeout(() => {
             const label = face === 'heads' ? 'Heads &mdash; 1' : 'Tails &mdash; 0';
             document.getElementById('flip-result-area').innerHTML = `
