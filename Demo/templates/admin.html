@@ -104,10 +104,104 @@
     .flip-result.heads { color:var(--gold); }
     .flip-result.tails { color:var(--silver); }
     .flip-sub { font-size:11px; color:var(--dim); text-align:center; font-family:'JetBrains Mono',monospace; margin-top:4px; }
+
+    /* QR modal */
+    .btn-qr {
+      background:transparent; color:var(--accent); font-size:12px; padding:7px 14px;
+      border-radius:8px; border:1px solid rgba(74,154,181,.4); cursor:pointer;
+      font-family:'JetBrains Mono',monospace; font-weight:500; letter-spacing:.3px;
+      transition:background .15s, border-color .15s;
+    }
+    .btn-qr:hover { background:rgba(74,154,181,.1); border-color:var(--accent); }
+
+    .qr-overlay {
+      display:none; position:fixed; inset:0; z-index:100;
+      background:rgba(5,7,12,.85);
+      backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+    }
+    .qr-overlay.open { display:flex; }
+
+    .qr-box {
+      position:relative;
+      background:linear-gradient(145deg,#1e2130,#161922);
+      border:1px solid rgba(74,154,181,.25);
+      border-radius:24px;
+      padding:40px 44px 36px;
+      text-align:center;
+      max-width:360px; width:90%;
+      box-shadow:0 0 0 1px rgba(255,255,255,.04), 0 32px 64px rgba(0,0,0,.6), 0 0 60px rgba(74,154,181,.08);
+    }
+
+    .qr-badge {
+      display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px;
+      letter-spacing:.8px; text-transform:uppercase;
+      background:rgba(74,154,181,.12); color:var(--accent);
+      border:1px solid rgba(74,154,181,.25); border-radius:999px;
+      padding:3px 12px; margin-bottom:14px;
+    }
+    .qr-box h2 {
+      font-size:22px; font-weight:800; color:var(--text);
+      letter-spacing:-.3px; margin-bottom:4px;
+    }
+    .qr-tagline {
+      font-size:12px; color:var(--dim); margin-bottom:24px; line-height:1.5;
+    }
+
+    .qr-frame {
+      display:inline-block;
+      background:#fff;
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 0 0 1px rgba(255,255,255,.08), 0 8px 32px rgba(0,0,0,.4);
+      margin-bottom:22px;
+    }
+    #qr-canvas-wrap canvas { display:block; border-radius:4px; }
+
+    .qr-url-row {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07);
+      border-radius:8px; padding:9px 14px; margin-bottom:20px;
+    }
+    .qr-url-dot { width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0; animation:blink .8s ease-in-out infinite; }
+    .qr-url-text {
+      font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent);
+      word-break:break-all; line-height:1.4;
+    }
+
+    .qr-close-btn {
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:12px; color:var(--dim); cursor:pointer;
+      font-family:'JetBrains Mono',monospace;
+      border:1px solid var(--border); border-radius:6px;
+      padding:6px 16px; transition:color .15s, border-color .15s;
+      background:none;
+    }
+    .qr-close-btn:hover { color:var(--text); border-color:#4a4d5a; }
   </style>
 </head>
 <body>
-  <h1>HTLP Admin Dashboard</h1>
+  <!-- QR modal -->
+  <div class="qr-overlay" id="qr-overlay" onclick="closeQR(event)">
+    <div class="qr-box">
+      <div class="qr-badge">Live Demo</div>
+      <h2>Join the Demo</h2>
+      <p class="qr-tagline">Scan with your phone to cast a vote<br>or submit a coin-flip secret</p>
+      <div class="qr-frame">
+        <div id="qr-canvas-wrap"></div>
+      </div>
+      <div class="qr-url-row">
+        <span class="qr-url-dot"></span>
+        <span class="qr-url-text">marley-choleric-leigh.ngrok-free.dev</span>
+      </div>
+      <button class="qr-close-btn" onclick="toggleQR()">&#x2715;&nbsp; close</button>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;">
+    <h1>HTLP Admin Dashboard</h1>
+    <button class="btn-qr" onclick="toggleQR()">&#x25A6; Show QR Code</button>
+  </div>
   <p class="subtitle">presenter view &mdash; keep this tab open</p>
 
   <div class="panels">
@@ -251,6 +345,33 @@
     setInterval(pollFlip, 1500);
     pollVote();
     pollFlip();
+
+    // ── QR Code ──────────────────────────────────────────
+    const QR_URL = 'https://marley-choleric-leigh.ngrok-free.dev';
+    let qrRendered = false;
+
+    function toggleQR() {
+      const overlay = document.getElementById('qr-overlay');
+      overlay.classList.toggle('open');
+      if (overlay.classList.contains('open') && !qrRendered) {
+        new QRCode(document.getElementById('qr-canvas-wrap'), {
+          text: QR_URL,
+          width: 240,
+          height: 240,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+        qrRendered = true;
+      }
+    }
+
+    function closeQR(e) {
+      if (e.target === document.getElementById('qr-overlay')) toggleQR();
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('qr-overlay').classList.remove('open'); });
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
